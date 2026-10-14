@@ -1,0 +1,36 @@
+{
+  "name": "Claims 365 Lab (Foundry + Agent Framework)",
+  // "1-" pins the image definition's major version, so a rebuild months from now gets the same
+  // layout (Python 3.13 on Debian bookworm) rather than whatever the floating tag points at.
+  "image": "mcr.microsoft.com/devcontainers/python:1-3.13-bookworm",
+  "features": {
+    // Chapter 1's az commands, and the .NET 8 SDK for the C# track.
+    "ghcr.io/devcontainers/features/azure-cli:1": {},
+    "ghcr.io/devcontainers/features/dotnet:2": { "version": "8.0" }
+  },
+  "postCreateCommand": "bash .devcontainer/postCreate.sh",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-python.python",
+        "ms-python.vscode-pylance",
+        "ms-azuretools.vscode-azurecli",
+        "ms-dotnettools.csdevkit"
+      ],
+      "settings": {
+        // postCreate.sh installs with `python`, which in this image is /usr/local/bin/python.
+        // Without this, VS Code's Run button can pick Debian's /usr/bin/python3 instead - a
+        // different interpreter with none of the lab packages - and every script dies with
+        // "ModuleNotFoundError: No module named 'agent_framework'". postCreate.sh also writes
+        // the DETECTED path into .vscode/settings.json, which overrides this if the image moves.
+        "python.defaultInterpreterPath": "/usr/local/bin/python",
+        "python.terminal.activateEnvInCurrentTerminal": true
+      }
+    }
+  },
+  "containerEnv": {
+    "PIP_DISABLE_PIP_VERSION_CHECK": "1",
+    "PYTHONUTF8": "1",
+    "PYTHONIOENCODING": "utf-8"
+  }
+}

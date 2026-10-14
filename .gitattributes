@@ -1,0 +1,8 @@
+# Tenant-Setup/CHECKSUMS.txt hashes these files byte for byte. Store and check them out exactly as
+# shipped, on every platform, or a Linux checkout would rewrite their line endings and every text
+# file in the pack would fail its checksum.
+Tenant-Setup/** -text
+
+# Shell scripts run inside a Linux container. Checked out with CRLF on Windows, a local Dev
+# Container fails on the first line with "$'\r': command not found".
+*.sh text eol=lf

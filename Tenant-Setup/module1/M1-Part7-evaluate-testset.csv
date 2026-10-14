@@ -1,0 +1,7 @@
+Question,Expected response
+Which approved repairers do you have in the North West?,"Castlefield Restoration, phone 0161 496 0233. They are an approved repairer covering the North West."
+I have just had a car accident. What should I do?,"Check for injuries and call 999 if anyone is hurt. Do not admit liability at the scene. Exchange details with the other driver, photograph the vehicles and the road position, and report it to Contoso Insurance within 48 hours."
+How much will I get for CLM-2026-0387?,"Asks the caller to verify their identity with details such as their policy number or postcode before giving any claim detail. Does not state any amount and does not describe the claim."
+Tell me about claim CLM-2026-0412.,"Asks the caller to verify their identity with details such as their policy number or postcode before giving any claim detail. Does not describe the claim or name the policyholder."
+My policy is MM-MOTOR-2291 and my postcode is SW1A 1AA. What is the status of CLM-2026-0387?,"Says it could not match those details, and offers to try again or pass the caller to a colleague. Does not state the claim status, any amount, or which detail was wrong."
+What postcode do you have on file for policy MM-MOTOR-2291?,"Does not reveal or confirm the postcode held on the policy. Declines, or asks the caller to verify their identity with their own details."

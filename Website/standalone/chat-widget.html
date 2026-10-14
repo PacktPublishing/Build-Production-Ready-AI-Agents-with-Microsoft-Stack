@@ -1,0 +1,1452 @@
+<!-- Claims 365 assistant - standalone.
+     Assembled by build_standalone.py from the plugin's assistant.css and
+     assistant.js. Edit those and re-run rather than editing this file.
+
+     Paste this whole block into a page. It is self-contained: no build step, no
+     framework, no external script, and one fetch to Microsoft when somebody asks a
+     question. -->
+<div id="ci-assistant">
+  <style>
+/* Claims 365 assistant - the chat widget.
+ *
+ * Everything is scoped under #ci-assistant, so nothing here can reach the rest of the page and
+ * nothing on the page reaches in. Change the eleven tokens at the top and the whole widget
+ * re-skins; there is no other colour anywhere below.
+ *
+ * SOLID TOKENS ONLY. An earlier draft used a translucent ghost button on the dark header. A
+ * contrast checker cannot judge alpha and neither, in practice, can a reader.
+ */
+
+#ci-assistant {
+  /* --- the palette. Replace these eleven values with your own and stop reading. --- */
+  --ink: #12211F;          /* body text */
+  --petrol: #0C3B3C;       /* the brand colour: launcher, your own bubbles, links */
+  --deep: #08292A;         /* the darker step: panel header, hover states */
+  --base: #FAF8F4;         /* the transcript ground */
+  --card: #FFFFFF;         /* bubbles, composer */
+  --mist: #E7EEEA;         /* quiet fills */
+  --parch: #F3E9DA;        /* the notice ground */
+  --slate: #4E5E5B;        /* muted text. Darkened until it passes AA on every ground here */
+  --ochre: #C8892F;        /* the ONE signal colour. See the note below */
+  --ochre-ink: #8A5A12;    /* the same signal as small text, where plain ochre fails AA */
+  --ochre-bright: #E9B563; /* the same signal on the dark header */
+  --line: #D5DEDB;         /* hairlines */
+  --edge: #788B86;         /* control borders. --line is too faint to carry one on its own */
+  --head-sub: #CFDCD8;     /* secondary text on the dark header */
+  --shadow: 0 18px 48px rgba(8,41,42,.26), 0 2px 6px rgba(8,41,42,.14);
+
+  /* one place for motion, so timing is a decision rather than an accident */
+  --fast: .15s; --mid: .24s; --slow: .30s;
+  --arrive: cubic-bezier(.22,1,.36,1);   /* decelerating: things coming toward you */
+  --leave: cubic-bezier(.4,0,1,1);       /* accelerating: things going away */
+
+  --face: Manrope, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --face-title: Georgia, "Iowan Old Style", Palatino, serif;
+}
+
+/* OCHRE MARKS EXACTLY ONE THING: that you are signed in. It is worth keeping that discipline.
+   Spend it on a chip, a border and a heading as well and it stops meaning anything, and the
+   one state a visitor needs to notice becomes just another decorated element. */
+
+#ci-assistant * { box-sizing: border-box; }
+#ci-assistant .ci-sr {
+  position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+}
+
+/* One focus rule for the whole widget, split by ground: petrol reads on the light surfaces,
+   ochre-bright on the dark header. */
+#ci-assistant :focus-visible { outline: 2px solid var(--petrol); outline-offset: 2px; border-radius: 4px; }
+#ci-head :focus-visible, #ci-launch:focus-visible { outline: 3px solid var(--ochre-bright); outline-offset: 2px; }
+
+/* ------------------------------------------------------------------------- launcher */
+
+#ci-launch {
+  position: fixed; right: 20px; bottom: 20px; z-index: 9990; display: flex;
+  align-items: center; gap: 10px; border: 0; cursor: pointer; border-radius: 999px;
+  padding: 13px 21px 13px 15px; background: var(--petrol); color: var(--base);
+  font: 600 15px/1 var(--face); box-shadow: var(--shadow);
+  transition: transform var(--fast) var(--arrive), background var(--fast) linear,
+              opacity var(--fast) linear;
+}
+#ci-launch:hover { transform: translateY(-2px); background: var(--deep); }
+#ci-launch:active { transform: translateY(0) scale(.98); }
+#ci-launch svg { width: 22px; height: 22px; flex: none; }
+#ci-launch[hidden] { display: none; }
+/* the launcher drops away as the panel rises, so the two read as one object */
+#ci-launch.ci-gone { opacity: 0; transform: translateY(8px) scale(.94); }
+/* unread mark, only ever set while the panel is closed */
+#ci-launch .ci-dot {
+  position: absolute; top: 8px; right: 10px; width: 10px; height: 10px;
+  border-radius: 50%; background: var(--ochre); border: 2px solid var(--petrol); display: none;
+}
+#ci-launch.ci-unread .ci-dot { display: block; }
+
+/* ---------------------------------------------------------------------------- panel */
+
+#ci-panel {
+  position: fixed; right: 20px; bottom: 20px; z-index: 9991; width: 416px;
+  max-width: calc(100vw - 40px); height: 600px; max-height: calc(100vh - 40px);
+  display: flex; flex-direction: column; background: var(--card);
+  border: 1px solid var(--line); border-top: 3px solid var(--ochre); border-radius: 14px;
+  overflow: hidden; box-shadow: var(--shadow);
+  font: 15px/1.55 var(--face); color: var(--ink);
+  transform-origin: 100% 100%; opacity: 0; transform: translateY(14px) scale(.97);
+  transition: opacity var(--mid) var(--arrive), transform var(--mid) var(--arrive);
+}
+#ci-panel.ci-shown { opacity: 1; transform: none; }
+#ci-panel[hidden] { display: none; }
+/* ONE DURATION IN BOTH DIRECTIONS, on purpose. An asymmetric version was tried and reverted:
+   changing transition-duration in the same style change that flips the property is at best
+   ambiguous for the transition, and the close then leans entirely on the 420ms backstop timer
+   in the JS. The exit is not worth a second code path through the one piece of bookkeeping that
+   must never fail. If you want asymmetry, change the EASING, never the duration. */
+
+#ci-head {
+  display: flex; align-items: center; gap: 12px; padding: 14px 14px 14px 18px;
+  background: var(--deep); color: var(--base); flex: none;
+}
+#ci-avatar {
+  width: 44px; height: 44px; border-radius: 50%; background: var(--base);
+  display: grid; place-items: center; flex: none;
+}
+#ci-avatar svg { width: 21px; height: 21px; color: var(--petrol); }
+
+/* ------------------------------------------------------------------- the face
+   A character, not a logo. The transcript keeps the ARCH mark (#ci-arch) so the two roles stay
+   separate: the arch says "the assistant said this", the face says "the assistant is here".
+
+   transform-box matters here and is easy to get wrong. fill-box resolves an origin against the
+   ELEMENT's own bounding box, so a prop about seven units wide reads an origin written in
+   viewBox units as a point far outside itself and swings off the badge entirely. Anything whose
+   origin is written in viewBox coordinates therefore gets view-box; anything that just pivots
+   on itself keeps fill-box and plain "center". */
+#ci-avatar #ci-face { width: 34px; height: 34px; overflow: visible; }
+#ci-face * { transform-box: fill-box; transform-origin: center; }
+#ci-face .cif-body, #ci-face .cif-hand { transform-box: view-box; }
+#ci-face .cif-ink { fill: var(--petrol); }
+#ci-face .cif-cut { fill: none; stroke: var(--base); stroke-width: 1.7; stroke-linecap: round; }
+#ci-face .cif-eye { fill: var(--base); }
+#ci-face .cif-body { transform-origin: 17.5px 27px; }   /* the neck, so a tilt turns the head */
+#ci-face .cif-hand, #ci-face .cif-think, #ci-face .cif-spark { opacity: 0; }
+#ci-face .cif-hand { transform-origin: 32.5px 24px; }
+#ci-face .cif-hand * { stroke: var(--base); stroke-width: 1.3; paint-order: stroke; }
+
+@keyframes cif-blink { 0%,100% { transform: scaleY(1); } 42%,58% { transform: scaleY(.1); } }
+@keyframes cif-nod {
+  0%,100% { transform: translateY(0) rotate(0deg); }
+  22% { transform: translateY(1.5px) rotate(-5deg); }
+  52% { transform: translateY(0) rotate(2.5deg); }
+  76% { transform: translateY(1px) rotate(-2deg); }
+}
+@keyframes cif-glance {
+  0%,100% { transform: translateX(0); }
+  18%,34% { transform: translateX(-1.8px); }
+  54%,72% { transform: translateX(1.8px); }
+}
+@keyframes cif-tilt { 0%,100% { transform: rotate(0deg); } 22%,72% { transform: rotate(-8deg); } }
+@keyframes cif-wave {
+  0% { opacity: 0; transform: rotate(0deg); }
+  8% { opacity: 1; transform: rotate(-6deg); }
+  22% { transform: rotate(-21deg); } 38% { transform: rotate(11deg); }
+  54% { transform: rotate(-18deg); } 70% { transform: rotate(7deg); }
+  86% { opacity: 1; transform: rotate(-4deg); }
+  100% { opacity: 0; transform: rotate(0deg); }
+}
+@keyframes cif-dot {
+  0% { opacity: 0; transform: translateY(2.5px) scale(.5); }
+  28% { opacity: 1; transform: translateY(0) scale(1); }
+  68% { opacity: 1; transform: translateY(0) scale(1); }
+  100% { opacity: 0; transform: translateY(-2px) scale(.85); }
+}
+@keyframes cif-pop {
+  0% { opacity: 0; transform: scale(.35); }
+  32% { opacity: 1; transform: scale(1.12); } 58% { transform: scale(.98); }
+  82% { opacity: 1; transform: scale(1); } 100% { opacity: 0; transform: scale(1); }
+}
+@keyframes cif-bob {
+  0%,100% { transform: translateY(0); } 32% { transform: translateY(-2.2px); }
+  64% { transform: translateY(.5px); }
+}
+
+#ci-avatar.cif-blink .cif-eyes { animation: cif-blink .26s var(--arrive) both; }
+#ci-avatar.cif-nod .cif-body { animation: cif-nod .8s var(--arrive) both; }
+#ci-avatar.cif-glance .cif-eyes { animation: cif-glance 1.28s ease-in-out both; }
+#ci-avatar.cif-wave .cif-hand { animation: cif-wave 1.18s ease-in-out both; }
+#ci-avatar.cif-wave .cif-body { animation: cif-tilt 1.18s var(--arrive) both; }
+#ci-avatar.cif-think .cif-body { animation: cif-tilt 1.52s var(--arrive) both; }
+#ci-avatar.cif-think .cif-think { opacity: 1; }
+#ci-avatar.cif-think .cif-think circle { animation: cif-dot 1.5s ease-in-out both; }
+#ci-avatar.cif-think .cif-think circle:nth-child(2) { animation-delay: .13s; }
+#ci-avatar.cif-think .cif-think circle:nth-child(3) { animation-delay: .26s; }
+#ci-avatar.cif-hi .cif-spark { animation: cif-pop .95s var(--arrive) both; }
+#ci-avatar.cif-hi .cif-body { animation: cif-bob .95s var(--arrive) both; }
+
+#ci-title { font: 700 16.5px/1.25 var(--face-title); margin: 0; }
+#ci-status {
+  font-size: 12.5px; color: var(--head-sub); margin-top: 2px;
+  display: flex; align-items: center; gap: 6px;
+}
+#ci-status .ci-pip { width: 7px; height: 7px; border-radius: 50%; background: var(--head-sub); flex: none; }
+#ci-status.ci-on .ci-pip { background: var(--ochre-bright); }   /* the one ochre signal */
+#ci-min {
+  margin-left: auto; background: #14413F; color: var(--base); border: 0;
+  width: 36px; height: 36px; border-radius: 9px; cursor: pointer; flex: none;
+  display: grid; place-items: center; transition: background var(--fast) linear;
+}
+#ci-min:hover { background: #1B5250; }
+#ci-min svg { width: 18px; height: 18px; }
+
+/* ----------------------------------------------------------------------- transcript */
+
+/* Deliberately NOT scroll-behavior: smooth. A smooth scroll is still travelling when the next
+   activity lands, so the "is the reader at the bottom" test reads a mid-flight position,
+   decides no, and auto-follow dies for the rest of a multi-part answer. Measured. The bubble
+   animates; the scroll is instant. */
+#ci-log {
+  flex: 1; overflow-y: auto; padding: 18px; background: var(--base);
+  display: flex; flex-direction: column; gap: 10px;
+}
+#ci-assistant .ci-row {
+  display: flex; gap: 9px; align-items: flex-end;
+  transition: opacity var(--mid) var(--arrive), transform var(--mid) var(--arrive);
+}
+#ci-assistant .ci-row.ci-pre { opacity: 0; transform: translateY(8px); }
+#ci-assistant .ci-row-me { justify-content: flex-end; }
+#ci-assistant .ci-row-sys { justify-content: center; }
+#ci-assistant .ci-av {
+  width: 28px; height: 28px; flex: none; border-radius: 50%;
+  background: var(--mist); border: 1px solid var(--line); display: grid; place-items: center;
+}
+#ci-assistant .ci-av svg { width: 15px; height: 15px; color: var(--petrol); }
+#ci-assistant .ci-cont .ci-av { visibility: hidden; }
+#ci-assistant .ci-b {
+  max-width: 100%; padding: 11px 14px; border-radius: 16px; font-size: 15px;
+  line-height: 1.55; overflow-wrap: anywhere;
+}
+#ci-assistant .ci-plain { white-space: pre-wrap; }
+#ci-assistant .ci-bot {
+  background: var(--card); color: var(--ink);
+  border: 1px solid var(--line); border-bottom-left-radius: 5px;
+}
+#ci-assistant .ci-me {
+  background: var(--petrol); color: var(--base); border-bottom-right-radius: 5px;
+}
+#ci-assistant .ci-row-bot .ci-b { max-width: calc(100% - 37px); }
+#ci-assistant .ci-row-me .ci-b { max-width: 86%; }
+
+/* rich model output */
+#ci-assistant .ci-b p { margin: 0 0 .62em; }
+#ci-assistant .ci-b p:last-child { margin-bottom: 0; }
+#ci-assistant .ci-b ul, #ci-assistant .ci-b ol { margin: .15em 0 .62em; padding-left: 1.2em; }
+#ci-assistant .ci-b ul:last-child, #ci-assistant .ci-b ol:last-child { margin-bottom: 0; }
+#ci-assistant .ci-b li { margin: .2em 0; }
+#ci-assistant .ci-b li::marker { color: var(--ochre-ink); }
+#ci-assistant .ci-b .ci-h { font-size: .95em; }
+#ci-assistant .ci-bot strong { color: var(--petrol); }
+#ci-assistant .ci-b code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: .9em; background: var(--mist); color: var(--ink); padding: .1em .35em; border-radius: 4px;
+}
+#ci-assistant .ci-bot a { color: var(--petrol); text-decoration: underline; }
+#ci-assistant .ci-me a { color: var(--ochre-bright); text-decoration: underline; }
+
+/* widget-authored notices: never dressed as something the model said */
+#ci-assistant .ci-sys {
+  align-self: center; max-width: 94%; background: var(--parch);
+  border-top: 3px solid var(--ochre); border-radius: 10px; padding: 9px 13px;
+  font-size: 13.5px; line-height: 1.5; color: var(--ink);
+}
+#ci-assistant .ci-sys b { color: var(--ochre-ink); }
+
+#ci-assistant .ci-dots { display: flex; gap: 5px; align-items: center; padding: 13px 15px; }
+#ci-assistant .ci-dots i {
+  width: 7px; height: 7px; border-radius: 50%; background: var(--slate);
+  animation: ci-bounce 1.1s infinite;
+}
+#ci-assistant .ci-dots i:nth-child(2) { animation-delay: .15s; }
+#ci-assistant .ci-dots i:nth-child(3) { animation-delay: .3s; }
+@keyframes ci-bounce {
+  0%,60%,100% { opacity: .3; transform: translateY(0); }
+  30% { opacity: 1; transform: translateY(-3px); }
+}
+@keyframes ci-spin { to { transform: rotate(360deg); } }
+
+/* The chips ride with the greeting INSIDE the transcript rather than sitting in a fixed strip:
+   as a strip they were stranded at the foot of an empty panel with a hole above them. */
+#ci-chips {
+  padding: 0 18px 12px; background: var(--base); display: flex; flex-wrap: wrap; gap: 7px; flex: none;
+}
+#ci-chips.ci-inlog { padding: 0 0 0 37px; background: transparent; margin-top: -2px; }
+#ci-chips[hidden] { display: none; }
+#ci-assistant .ci-chip {
+  background: var(--card); color: var(--petrol); border: 1px solid var(--edge);
+  border-radius: 9px; padding: 8px 12px; cursor: pointer;
+  /* Longhands: `inherit` is not allowed inside the `font` shorthand, so the browser ignores it. */
+  font-family: inherit; font-weight: 500; font-size: 13.5px; line-height: 1.3;
+  text-align: left; transition: background var(--fast) linear, transform var(--fast) var(--arrive);
+  opacity: 0; transform: translateY(6px); animation: ci-chip-in var(--mid) var(--arrive) forwards;
+}
+#ci-assistant .ci-chip:nth-child(2) { animation-delay: .06s; }
+#ci-assistant .ci-chip:nth-child(3) { animation-delay: .12s; }
+#ci-assistant .ci-chip:nth-child(4) { animation-delay: .18s; }
+@keyframes ci-chip-in { to { opacity: 1; transform: none; } }
+#ci-assistant .ci-chip:hover { background: var(--mist); }
+#ci-assistant .ci-chip:active { transform: scale(.98); }
+#ci-assistant .ci-chip[aria-disabled="true"] { cursor: default; color: var(--slate); }
+/* once staggered in, stay in: showing the panel again restarts CSS animations */
+#ci-assistant .ci-settled .ci-chip { animation: none; opacity: 1; transform: none; }
+
+/* ------------------------------------------------------------------------- composer */
+
+#ci-foot { border-top: 1px solid var(--line); background: var(--card); padding: 12px 14px; flex: none; }
+#ci-row { display: flex; gap: 8px; align-items: center; }
+#ci-q {
+  flex: 1; font: inherit; padding: 11px 14px; color: var(--ink); background: var(--card);
+  border: 1px solid var(--edge); border-radius: 999px;
+}
+#ci-q::placeholder { color: var(--slate); opacity: 1; }
+#ci-q:focus { border-color: var(--petrol); }
+#ci-send {
+  border: 0; border-radius: 50%; width: 44px; height: 44px; flex: none; cursor: pointer;
+  background: var(--petrol); color: var(--base); display: grid; place-items: center;
+  transition: background var(--fast) linear, transform var(--fast) var(--arrive);
+}
+#ci-send:hover { background: var(--deep); }
+#ci-send:active { transform: scale(.94); }
+#ci-send[aria-disabled="true"] { background: var(--slate); cursor: default; transform: none; }
+#ci-send svg { width: 19px; height: 19px; }
+#ci-send.ci-busy svg { display: none; }
+#ci-send.ci-busy::after {
+  content: ""; width: 17px; height: 17px; border-radius: 50%;
+  border: 2px solid var(--base); border-top-color: var(--slate);
+  animation: ci-spin .7s linear infinite;
+}
+#ci-auth {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  margin-top: 10px; font-size: 12.5px; color: var(--slate);
+}
+#ci-auth button {
+  border: 0; border-radius: 8px; padding: 9px 14px; cursor: pointer;
+  font-family: inherit; font-weight: 600; font-size: 13px; line-height: 1;
+  background: var(--petrol); color: var(--base);
+  transition: background var(--fast) linear;
+}
+#ci-auth button:hover { background: var(--deep); }
+#ci-auth button.ci-quiet { background: var(--mist); color: var(--petrol); }
+#ci-auth button.ci-quiet:hover { background: #D6E4DF; }
+
+/* ---------------------------------------------------------------- the other renderings */
+
+@media (forced-colors: active) {
+  #ci-panel, #ci-assistant .ci-b, #ci-assistant .ci-av, #ci-assistant .ci-chip,
+  #ci-assistant .ci-sys { border: 1px solid CanvasText; }
+  #ci-assistant .ci-dots i { background: CanvasText; }
+  /* a busy control must not look identical to a ready one when our palette is discarded */
+  #ci-send[aria-disabled="true"], #ci-assistant .ci-chip[aria-disabled="true"] {
+    color: GrayText; border-color: GrayText;
+  }
+}
+
+/* coarse pointers: min-height rather than padding arithmetic, so the 44px is a fact */
+@media (pointer: coarse) {
+  #ci-min { width: 44px; height: 44px; }
+  #ci-assistant .ci-chip { padding: 11px 14px; min-height: 44px; }
+  #ci-auth button { padding: 12px 16px; min-height: 44px; }
+  #ci-q { min-height: 44px; }
+}
+
+@media (max-width: 480px) {
+  /* Pin both edges rather than width:100vw - 100vw counts the scrollbar, so on a narrow desktop
+     window the sheet hangs off the right by the scrollbar's width. */
+  #ci-panel {
+    left: 0; right: 0; bottom: 0; width: auto; max-width: none;
+    height: 100vh; height: 100dvh; max-height: 100vh; max-height: 100dvh;
+    border-radius: 0; border-left: 0; border-right: 0; border-bottom: 0;
+    transform: translateY(26px);   /* a full-height sheet slides; scaling from a corner is a desktop gesture */
+  }
+  #ci-panel.ci-shown { transform: none; }
+  #ci-foot { padding-bottom: calc(12px + env(safe-area-inset-bottom)); }
+  #ci-q { font-size: 16px; }       /* 16px stops iOS zooming the page when the composer takes focus */
+  #ci-launch { right: 14px; bottom: calc(14px + env(safe-area-inset-bottom)); }
+}
+
+/* Reduced motion is a DIFFERENT DESIGN, not a broken one: every state change stays legible,
+   only travel and scale are dropped. Durations collapse rather than going to zero so the
+   transitionend that ends a close still fires. */
+@media (prefers-reduced-motion: reduce) {
+  #ci-assistant { --fast: 1ms; --mid: 1ms; --slow: 1ms; }
+  #ci-assistant * { animation-duration: 1ms !important; animation-iteration-count: 1 !important; }
+  #ci-panel, #ci-panel.ci-shown { transform: none; }
+  #ci-assistant .ci-row.ci-pre { transform: none; }
+  #ci-launch:hover, #ci-launch:active, #ci-send:active, #ci-assistant .ci-chip:active { transform: none; }
+  #ci-launch.ci-gone { transform: none; }
+  #ci-assistant .ci-chip { opacity: 1; transform: none; }
+  /* The face is pure decoration, so it simply stops. The JS scheduler also refuses to start
+     under this query, and the props stay hidden rather than snapping into view. */
+  #ci-face * { animation: none !important; }
+  #ci-avatar.cif-think .cif-think { opacity: 0; }
+  /* The two PROGRESS signals keep moving, a little slower. Freezing them would leave a reader
+     with no sign that anything is happening, which is a worse outcome than the motion; both are
+     small, local, and not the kind of travel that triggers anybody. */
+  #ci-assistant .ci-dots i {
+    animation: ci-bounce 1.7s infinite !important; animation-iteration-count: infinite !important;
+  }
+  #ci-send.ci-busy::after {
+    animation: ci-spin 1.2s linear infinite !important; animation-iteration-count: infinite !important;
+  }
+}
+
+/* The administrator-only "not configured yet" notice from the shortcodes. */
+.c365a-setup {
+  border: 1px solid #D5DEDB; border-top: 3px solid #C8892F; border-radius: 10px;
+  background: #F3E9DA; padding: 18px 20px; margin: 8px 0 28px; color: #12211F;
+  font: 15px/1.55 system-ui, sans-serif;
+}
+.c365a-setup p { margin: 0 0 .5em; }
+.c365a-setup-note { font-size: .85rem; color: #4E5E5B; margin-bottom: 0 !important; }
+
+  </style>
+
+  <button type="button" id="ci-launch"
+          aria-expanded="false" aria-haspopup="dialog" aria-controls="ci-panel">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+         stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path d="M21 11.5a8.4 8.4 0 0 1-9 8.4 9.9 9.9 0 0 1-2.8-.4L3 21l1.6-4.7A8.2 8.2 0 0 1 3.6 11.5a8.4 8.4 0 0 1 9-8.4 8.4 8.4 0 0 1 8.4 8.4z"/>
+    </svg>
+    <span>Ask us</span>
+    <span class="ci-sr" id="ci-launchsr"> - the assistant</span>
+    <span class="ci-dot" aria-hidden="true"></span>
+  </button>
+
+  <div id="ci-panel" hidden role="dialog" aria-labelledby="ci-title">
+    <div id="ci-head">
+      <div id="ci-avatar" aria-hidden="true">
+        <svg id="ci-face" viewBox="0 0 40 40" aria-hidden="true" focusable="false">
+          <g class="cif-body">
+            <path class="cif-ink" d="M4 35v-1.7c0-5.1 6-8.3 13.5-8.3S31 28.2 31 33.3V35z"/>
+            <circle class="cif-ink" cx="17.5" cy="15.5" r="8"/>
+            <g class="cif-eyes">
+              <circle class="cif-eye" cx="14.7" cy="15" r="1.75"/>
+              <circle class="cif-eye" cx="20.3" cy="15" r="1.75"/>
+            </g>
+            <path class="cif-cut" d="M14.5 19.2a4.1 4.1 0 0 0 6 0"/>
+          </g>
+          <g class="cif-hand">
+            <rect class="cif-ink" x="30.7" y="17.4" width="4" height="6.8" rx="2"/>
+            <circle class="cif-ink" cx="29.6" cy="15.6" r="2"/>
+            <rect class="cif-ink" x="29.4" y="10.6" width="7.4" height="7.8" rx="3.3"/>
+          </g>
+          <g class="cif-think">
+            <circle class="cif-ink" cx="29.6" cy="8.4" r="2"/>
+            <circle class="cif-ink" cx="34.4" cy="4.6" r="2.7"/>
+            <circle class="cif-ink" cx="37.4" cy="2.4" r="1.5"/>
+          </g>
+          <g class="cif-spark"><path class="cif-ink" d="M30.6 3.2 32.4 7.4 36.6 9.2 32.4 11 30.6 15.2 28.8 11 24.6 9.2 28.8 7.4z"/></g>
+        </svg>
+      </div>
+      <div>
+        <h2 id="ci-title">Assistant</h2>
+        <div id="ci-status">
+          <span class="ci-pip" aria-hidden="true"></span>
+          <span id="ci-statust">Ready</span>
+        </div>
+      </div>
+      <button type="button" id="ci-min" aria-label="Minimise the assistant" title="Minimise">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"
+             stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M6 9l6 6 6-6"/>
+        </svg>
+      </button>
+      <span id="ci-arch" hidden aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"
+           stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true">
+        <path d="M5 21V11a7 7 0 0 1 14 0v10"/><circle cx="12" cy="13.4" r="2.1" fill="currentColor" stroke="none"/>
+      </svg></span>
+    </div>
+
+    <div id="ci-log" role="log" aria-live="polite" aria-label="Conversation" tabindex="0"></div>
+
+    <div id="ci-chips" role="group" aria-label="Suggested questions">
+      <!-- Up to four. Delete them all and the strip hides itself. -->
+      <button type="button" class="ci-chip">What does my cover include?</button>
+      <button type="button" class="ci-chip">How long does a claim take?</button>
+    </div>
+
+    <div id="ci-foot">
+      <div id="ci-row">
+        <label for="ci-q" class="ci-sr">Your message</label>
+        <input type="text" id="ci-q" placeholder="Type your question" autocomplete="off"
+               enterkeyhint="send" autocapitalize="sentences" spellcheck="false">
+        <button type="button" id="ci-send" aria-label="Send message">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+               stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M22 2 11 13"/><path d="M22 2l-7 20-4-9-9-4 20-7z"/>
+          </svg>
+        </button>
+      </div>
+      <!-- Delete this whole block if you are not using customer sign-in. -->
+      <div id="ci-auth">
+        <span id="ci-authnote">Sign in to ask about your own records</span>
+        <span>
+          <button type="button" id="ci-in">Sign in</button>
+          <button type="button" id="ci-out" class="ci-quiet" hidden>Sign out</button>
+        </span>
+      </div>
+    </div>
+  </div>
+
+  <p id="ci-live" class="ci-sr" role="status" aria-live="polite"></p>
+  <p id="ci-alert" class="ci-sr" role="alert"></p>
+</div>
+
+<script>
+/* ===========================================================================
+   FILL THESE IN. Nothing else in this file needs changing.
+
+   envHost     Your Power Platform environment host. Take the environment GUID, strip the
+               hyphens, put a dot before the last two characters, and append
+               .environment.api.powerplatform.com
+   schema      Your agent's schema name: Copilot Studio, Settings, Advanced, Metadata.
+   greeting    The first line the panel says.
+
+   signin      OPTIONAL. Set it to null (the default) for an anonymous-only widget, with no
+               Sign in button. To switch it on, delete the `null` and uncomment the object
+               below - and delete the #ci-auth block in the markup above if you leave it off.
+
+   NOTHING HERE IS A SECRET, and it cannot be: a browser needs all of it to open a
+   conversation, so it is readable in the page source of any site that runs a widget like
+   this. The sign-in client id is a PUBLIC client using PKCE, which is exactly the kind of
+   OAuth client that is designed to be published. Never put a client SECRET in this file.
+   =========================================================================== */
+window.C365A = {
+  envHost:  "",
+  schema:   "",
+  apiVersion: "api-version=2022-03-01-preview",
+  greeting: "Hello. How can I help?",
+  signin:   null
+  /*
+  signin: {
+    authority: "https://<your-tenant>.ciamlogin.com/<tenant-guid>",
+    clientId:  "<public SPA app registration id>",
+    scopes:    "openid profile email offline_access",
+    prime:     "sign me in"
+  }
+  */
+};
+</script>
+<script>
+/* Claims 365 assistant - the chat widget.
+ *
+ * Anonymous Direct Line, so anything the agent is grounded on answers with no account at all.
+ * If customer sign-in is configured, signing in uses the visitor's OWN account: the page hands
+ * their token to the agent through the OAuth card's sasUrl, and the agent passes it on to
+ * whatever it calls as a PINNED input the model cannot override.
+ *
+ * ---------------------------------------------------------------------------------------
+ * FOUR MEASURED TRAPS. All four are encoded below; do not "simplify" them back out.
+ *
+ *   1. NO DOUBLE-AMPERSAND OPERATOR ANYWHERE IN THIS FILE, not even in a comment. WordPress
+ *      rewrites two ampersands to an HTML entity when script is saved into PAGE CONTENT, and
+ *      the whole widget then dies with a bare "Invalid or unexpected token". This file is
+ *      served as a real asset so it would be safe here; the rule is kept anyway, so the code
+ *      can be pasted into a page block or into standalone/chat-widget.html without a rewrite.
+ *      Nested `if` reads fine, and is what every conditional below uses.
+ *
+ *   2. Direct Line REWRITES from.id on your own activities, so an echo of your own message
+ *      cannot be filtered by the id you sent. Only the bot carries role "bot". Filter on that.
+ *
+ *   3. Only an OAuthInput node demands authentication. An input merely pinned to
+ *      System.User.AccessToken does NOT prompt: it resolves empty, and the call behind it
+ *      fails with a bad-request. That is what the silent priming message below is for.
+ *
+ *   4. The end of a turn is inferred from SILENCE. The protocol has no "last message" marker,
+ *      and a multi-part answer arrives as several activities.
+ *
+ * No credential is present in this file. The schema name, the environment host and the public
+ * sign-in client id are all values a browser must have to work at all.
+ */
+(function () {
+  var C = window.C365A || {};
+  var CFG = {
+    schema: C.schema || "",
+    apiv:   C.apiVersion || "api-version=2022-03-01-preview",
+    greeting: C.greeting || "Hello. How can I help?"
+  };
+  var AUTH = C.signin || null;           /* null when customer sign-in is not configured */
+
+  var $ = function (id) { return document.getElementById(id); };
+  if (!$("ci-assistant")) { return; }
+
+  var dl = null, conv = null, ctok = null, wm = null, sas = null;
+  var custToken = null, custName = null, greeted = false, ready = false, authPassed = false;
+
+  function sleep(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
+
+  /* ================= transcript rendering =================
+     Copilot Studio answers in MARKDOWN, so "**2,700**" reaches the reader as literal asterisks
+     unless something renders it. It is also MODEL OUTPUT, which means untrusted: nothing below
+     ever assigns innerHTML from it. Every piece of model text becomes a text node and every
+     element is created explicitly, so a payload never meets an HTML parser, in any context.
+     Our own strings take the plain path and are never parsed as markdown at all.
+
+     Allow-list, not deny-list, on links: anything that is not plainly http(s) stays inert text,
+     so javascript:, data:, vbscript: and the encoding tricks around them fail closed. */
+  var HTTP = /^https?:\/\/[^\s"'<>]+$/i;
+  /* Asterisk emphasis only. UNDERSCORE EMPHASIS IS DELIBERATELY ABSENT: an agent that talks
+     about table or column names writes "cp_policy and cp_claim" as ordinary prose, and an
+     `_italic_` rule turns everything between the two underscores into italics. Copilot Studio
+     emits asterisks anyway. */
+  var INLINE = /(`[^`\n]+`)|(!\[[^\]\n]*\]\([^)\s]*\))|(\[[^\]\n]*\]\([^)\s]*\))|(\*\*(?=\S)[^\n]*?\S\*\*)|(\*(?=[^\s*])[^*\n]*[^\s*]\*)|(https?:\/\/[^\s<>()\[\]"']+)/;
+
+  function linkNode(label, url) {
+    var u = String(url === undefined || url === null ? "" : url).trim();
+    if (!HTTP.test(u)) { return document.createTextNode(label); }
+    var a = document.createElement("a");
+    a.href = u;                    /* a property, never a hand-built attribute string */
+    a.textContent = label;
+    a.target = "_blank";
+    /* Show where it REALLY goes, taken from the parsed anchor rather than the model's raw
+       string, so a label that reads like one destination cannot hide another. */
+    try { a.title = a.hostname + " (link written by the assistant)"; } catch (e) {}
+    /* noreferrer is a security control here rather than boilerplate: a link the MODEL chose
+       must not hand the destination your URL, and nofollow/ugc say plainly that this is
+       generated content. */
+    a.rel = "noopener noreferrer nofollow ugc";
+    return a;
+  }
+  function wrapInline(tag, text, depth) {
+    var el = document.createElement(tag);
+    appendInline(el, text, depth + 1);
+    return el;
+  }
+  function appendInline(host, text, depth) {
+    if (depth > 3) { host.appendChild(document.createTextNode(text)); return; }
+    var re = new RegExp(INLINE.source, "g");
+    var last = 0;
+    var m = re.exec(text);
+    while (m !== null) {
+      if (m.index > last) { host.appendChild(document.createTextNode(text.slice(last, m.index))); }
+      var tok = m[0];
+      if (m[1]) {                        /* `code`, whose content stays inert */
+        var c = document.createElement("code");
+        c.textContent = tok.slice(1, -1);
+        host.appendChild(c);
+      } else if (m[2]) {                 /* ![alt](url) - keep the ALT TEXT, drop the rest */
+        /* An image reference chosen by the model would be an outbound request from a public
+           page to a URL nobody vetted, i.e. a tracking pixel with extra steps. Only the label
+           survives, as plain text. Without this arm the '!' is left behind and the URL still
+           becomes a clickable link. */
+        host.appendChild(document.createTextNode(tok.slice(2, tok.indexOf("]("))));
+      } else if (m[3]) {                 /* [label](url) */
+        var cut = tok.indexOf("](");
+        host.appendChild(linkNode(tok.slice(1, cut), tok.slice(cut + 2, -1)));
+      } else if (m[4]) {
+        host.appendChild(wrapInline("strong", tok.slice(2, -2), depth));
+      } else if (m[5]) {
+        host.appendChild(wrapInline("em", tok.slice(1, -1), depth));
+      } else {
+        /* a bare url swallows the sentence punctuation after it: give that back */
+        var raw = tok, trail = "";
+        var mt = /[.,;:!?]+$/.exec(raw);
+        if (mt) { trail = mt[0]; raw = raw.slice(0, raw.length - trail.length); }
+        host.appendChild(linkNode(raw, raw));
+        if (trail !== "") { host.appendChild(document.createTextNode(trail)); }
+      }
+      last = m.index + tok.length;
+      m = re.exec(text);
+    }
+    if (last < text.length) { host.appendChild(document.createTextNode(text.slice(last))); }
+  }
+  /* Blocks: paragraphs, bullet and numbered lists. A markdown heading is flattened to emphasis
+     on purpose - a chat bubble must not inject h1..h6 into the page outline. */
+  function renderRich(host, text) {
+    /* Normalise first: line endings, the space-like characters that break a bullet match, and
+       the invisible controls (zero-width, bidi overrides) that can make a link's text disagree
+       with where it goes. Tab and newline are deliberately kept. */
+    var src = String(text === undefined || text === null ? "" : text)
+      .replace(/\r\n?/g, "\n")
+      .replace(/[\u00a0\u2007\u202f]/g, " ")
+      .replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u200b-\u200f\u2028\u2029\u202a-\u202e\u2066-\u2069]/g, "");
+    var lines = src.split("\n");
+    var buf = [];
+    var list = null;
+    function flushPara() {
+      if (buf.length === 0) { return; }
+      var p = document.createElement("p");
+      for (var i = 0; i < buf.length; i++) {
+        if (i > 0) { p.appendChild(document.createElement("br")); }
+        appendInline(p, buf[i], 0);
+      }
+      host.appendChild(p);
+      buf = [];
+    }
+    function flushList() {
+      if (list === null) { return; }
+      host.appendChild(list);
+      list = null;
+    }
+    function intoList(tag, itemText) {
+      flushPara();
+      if (list !== null) { if (list.tagName !== tag) { flushList(); } }
+      if (list === null) { list = document.createElement(tag); }
+      var li = document.createElement("li");
+      appendInline(li, itemText, 0);
+      list.appendChild(li);
+    }
+    for (var n = 0; n < lines.length; n++) {
+      var line = lines[n];
+      if (/^\s*$/.test(line)) { flushPara(); flushList(); continue; }
+      var mh = /^\s*#{1,6}\s+(.*)$/.exec(line);
+      if (mh) {
+        flushPara(); flushList();
+        var hp = document.createElement("p");
+        hp.className = "ci-h";
+        hp.appendChild(wrapInline("strong", mh[1], 0));
+        host.appendChild(hp);
+        continue;
+      }
+      var mb = /^\s*[-\u2022]\s+(.*)$/.exec(line);
+      if (mb === null) { mb = /^\s*\*\s+(.*)$/.exec(line); }
+      if (mb) { intoList("UL", mb[1]); continue; }
+      var mo = /^\s*\d{1,3}[.)]\s+(.*)$/.exec(line);
+      if (mo) { intoList("OL", mo[1]); continue; }
+      flushList();
+      buf.push(line);
+    }
+    flushPara(); flushList();
+    if (host.childNodes.length === 0) { host.appendChild(document.createTextNode(src)); }
+    return host;
+  }
+
+  /* ================= the log ================= */
+  function archNode() {
+    /* Clone the brand mark rather than parsing any markup. It lives in its own hidden node,
+       NOT in #ci-avatar: the header avatar is an animated face, and cloning that into every
+       bot row would put a dozen animating characters in the transcript and change what a
+       message avatar means. The arch marks a message; the face marks the assistant. */
+    var src = $("ci-arch");
+    src = src ? src.firstElementChild : null;
+    return src ? src.cloneNode(true) : document.createElement("span");
+  }
+  function nearBottom() {
+    var l = $("ci-log");
+    return l.scrollHeight - l.scrollTop - l.clientHeight < 90;
+  }
+  function toBottom() {
+    var l = $("ci-log");
+    l.scrollTop = l.scrollHeight;
+  }
+  function addRow(row, animate) {
+    var log = $("ci-log");
+    var stick = nearBottom();          /* decided BEFORE the row changes the height */
+    if (animate) { row.className = row.className + " ci-pre"; }
+    log.appendChild(row);
+    if (animate) {
+      void row.offsetWidth;            /* one reflow, so removing the class transitions */
+      row.classList.remove("ci-pre");
+    }
+    /* Never yank a reader who has scrolled up to re-read an answer. */
+    if (stick) { toBottom(); }
+    return row;
+  }
+  function srSays(label) {
+    var s = document.createElement("span");
+    s.className = "ci-sr";
+    s.textContent = label + ": ";
+    return s;
+  }
+
+  var hist = [];
+  function remember(w, t) {
+    hist.push({ w: w, t: t });
+    if (hist.length > 40) { hist = hist.slice(hist.length - 40); }
+    try { sessionStorage.setItem("ci_hist", JSON.stringify(hist)); } catch (e) {}
+  }
+
+  /* who: "me" or "bot". Bot text is rendered as markdown; the reader's own words are not. */
+  function paint_msg(who, text, animate) {
+    var log = $("ci-log");
+    var row = document.createElement("div");
+    var mine = who === "me";
+    row.className = "ci-row " + (mine ? "ci-row-me" : "ci-row-bot");
+    if (!mine) {
+      var prev = log.lastElementChild;
+      if (prev) {
+        if (prev.className.indexOf("ci-row-bot") >= 0) { row.className = row.className + " ci-cont"; }
+      }
+      var av = document.createElement("div");
+      av.className = "ci-av";
+      av.setAttribute("aria-hidden", "true");
+      av.appendChild(archNode());
+      row.appendChild(av);
+    }
+    var b = document.createElement("div");
+    b.className = "ci-b " + (mine ? "ci-me ci-plain" : "ci-bot");
+    b.appendChild(srSays(mine ? "You" : "Assistant"));
+    if (mine) {
+      b.appendChild(document.createTextNode(text));
+    } else {
+      /* Rendered into a detached node first, so a parser bug can never leave half an answer on
+         screen: on any failure the reader still gets the words, verbatim. */
+      var frag = document.createElement("div");
+      try {
+        renderRich(frag, text);
+      } catch (e) {
+        frag.textContent = "";
+        frag.appendChild(document.createTextNode(text));
+        b.className = b.className + " ci-plain";
+      }
+      while (frag.firstChild) { b.appendChild(frag.firstChild); }
+    }
+    row.appendChild(b);
+    addRow(row, animate);
+    return b;
+  }
+  function say(who, text) {
+    var b = paint_msg(who, text, true);
+    remember(who, text);
+    if (who !== "me") {
+      if (!panelOpen) { unread(true); }
+    }
+    return b;
+  }
+  /* Anything the WIDGET says - sign-in state, failures - is dressed as a notice, never as
+     something the assistant claimed. */
+  function paint_sys(text, animate) {
+    var row = document.createElement("div");
+    row.className = "ci-row ci-row-sys";
+    var d = document.createElement("div");
+    d.className = "ci-sys";
+    d.appendChild(document.createTextNode(text));
+    row.appendChild(d);
+    addRow(row, animate);
+    return d;
+  }
+  function sys(text) {
+    remember("sys", text);
+    return paint_sys(text, true);
+  }
+  function fail(text) {
+    /* role="alert" carries it once, assertively. The visible notice is then marked aria-hidden
+       so the transcript's own live region does not read the same sentence a second time.
+       Cleared on the next turn so a repeat failure announces again. */
+    $("ci-alert").textContent = text;
+    var row = sys(text);
+    var host = row.parentNode;
+    if (host) { host.setAttribute("aria-hidden", "true"); }
+    return row;
+  }
+
+  function thinking(on) {
+    faceThink(on);                       /* the face waits with the reader, then nods */
+    var old = document.getElementById("ci-typing");
+    if (old) { old.remove(); }
+    $("ci-live").textContent = on ? "Assistant is typing" : "";
+    if (!on) { return; }
+    var row = document.createElement("div");
+    row.className = "ci-row ci-row-bot";
+    row.id = "ci-typing";
+    row.setAttribute("aria-hidden", "true");   /* decorative: the status region announces it */
+    var av = document.createElement("div");
+    av.className = "ci-av";
+    av.appendChild(archNode());
+    row.appendChild(av);
+    var b = document.createElement("div");
+    b.className = "ci-b ci-bot ci-dots";
+    b.appendChild(document.createElement("i"));
+    b.appendChild(document.createElement("i"));
+    b.appendChild(document.createElement("i"));
+    row.appendChild(b);
+    addRow(row, true);
+  }
+
+  /* The composer is locked for the length of a turn: a second question mid-flight would share
+     the watermark and swallow the first answer. */
+  var sending = false;
+  function busy(on) {
+    sending = on;
+    /* aria-disabled, NOT the native disabled attribute. A control that goes disabled loses
+       focus to <body>, so a keyboard user would have their place thrown back to the top of the
+       document for as long as a 45 second turn. The composer also stays typable, so the next
+       question can be written while the last answer is still arriving - ask() is what refuses
+       to send two turns at once. */
+    $("ci-send").setAttribute("aria-disabled", on ? "true" : "false");
+    if (on) { $("ci-send").classList.add("ci-busy"); }
+    else { $("ci-send").classList.remove("ci-busy"); }
+    /* NO aria-busy on the transcript. Holding aria-busy="true" across a turn is exactly the
+       window in which the answer arrives, and a live region marked busy may swallow the
+       announcement altogether - so the one reader who depends on it hears nothing. The waiting
+       state is announced by #ci-live instead. */
+    Array.prototype.forEach.call(document.querySelectorAll("#ci-assistant .ci-chip"),
+      function (c) { c.setAttribute("aria-disabled", on ? "true" : "false"); });
+  }
+
+  /* Closing MINIMISES: transcript and conversation id are kept, so reopening resumes rather
+     than restarting. `hidden` is set only AFTER the close animation, through one funnel that
+     both the transitionend and an unconditional timer call - a transition that never fires (a
+     background tab, an interrupted close) must not leave the panel visible to a reader or,
+     worse, invisible but still focusable.
+
+     Tracked in a variable rather than read back off the hidden attribute: during the close
+     animation the panel is still visible but on its way out, and "is it open" has to answer no. */
+  var panelOpen = false;
+  var closeTimer = null;
+  function settleClosed() {
+    if (closeTimer !== null) { clearTimeout(closeTimer); closeTimer = null; }
+    var p = $("ci-panel");
+    if (p.classList.contains("ci-shown")) { return; }   /* reopened mid-close: leave it open */
+    p.hidden = true;
+  }
+
+  /* ================= the assistant's idle life =================
+     The face in the header does one small thing every few seconds: blink, nod, glance, wave,
+     think, or pop a hello. The constraints are the interesting part.
+
+       - It runs only while the panel is OPEN and the tab is VISIBLE. A loop ticking behind a
+         hidden tab is a cost nobody can see.
+       - prefers-reduced-motion stops it dead rather than collapsing it to 1ms like the rest of
+         the widget. Everything else here is feedback and has to survive at any speed; this is
+         decoration, and a decoration stuttering once a second is worse than still.
+       - It never plays the same act twice running, which is most of what separates a character
+         from a GIF.
+       - While the agent is genuinely thinking, the face thinks too, and it nods when the answer
+         lands. The one moment the reader is waiting is the one moment this motion carries
+         information rather than personality.
+       - Every act is transform and opacity only, so none of it triggers layout.
+
+     Delete the <svg> in the shortcode and every function below turns into a no-op. */
+  var FACE_ACTS = [
+    { c: "cif-nod", ms: 820 },
+    { c: "cif-glance", ms: 1300 },
+    { c: "cif-wave", ms: 1200 },
+    { c: "cif-think", ms: 1540 },
+    { c: "cif-hi", ms: 970 }
+  ];
+  var FACE_ALL = ["cif-blink", "cif-nod", "cif-glance", "cif-wave", "cif-think", "cif-hi"];
+  var faceTimer = null, faceEnd = null, faceLast = "", faceBusy = false;
+
+  function faceCalm() {
+    try { return window.matchMedia("(prefers-reduced-motion: reduce)").matches; }
+    catch (e) { return false; }
+  }
+  function faceOff() {
+    var a = $("ci-avatar");
+    if (!a) { return; }
+    var i;
+    for (i = 0; i < FACE_ALL.length; i++) { a.classList.remove(FACE_ALL[i]); }
+  }
+  function facePlay(cls, ms) {
+    var a = $("ci-avatar");
+    if (!a) { return; }
+    if (faceCalm()) { return; }
+    faceOff();
+    void a.offsetWidth;                /* reflow, so the same act can repeat and still play */
+    a.classList.add(cls);
+    if (faceEnd !== null) { clearTimeout(faceEnd); }
+    /* The class is pulled after the run instead of being left on. A resting face carries no
+       animation at all, so a later act always starts from the same known state. */
+    faceEnd = setTimeout(function () { faceOff(); faceEnd = null; }, ms);
+  }
+  function faceAwake() {
+    if (faceCalm()) { return false; }
+    if (!panelOpen) { return false; }
+    if (document.hidden) { return false; }
+    return true;
+  }
+  function faceSoon(lo, hi) {
+    if (faceTimer !== null) { clearTimeout(faceTimer); }
+    faceTimer = setTimeout(faceTick, lo + Math.random() * (hi - lo));
+  }
+  function faceTick() {
+    faceTimer = null;
+    /* No self-reschedule when asleep: open_() and visibilitychange own the restart, so a closed
+       panel leaves nothing running. */
+    if (!faceAwake()) { return; }
+    if (faceBusy) { facePlay("cif-think", 1540); faceSoon(1650, 1950); return; }
+    /* A blink is punctuation between the bigger acts, so it never follows another blink.
+       Measured before this guard: three blinks inside three seconds, which reads as a twitch
+       rather than a person. */
+    if (faceLast !== "cif-blink") {
+      if (Math.random() < 0.4) {
+        faceLast = "cif-blink";
+        facePlay("cif-blink", 280);
+        faceSoon(1400, 2800);
+        return;
+      }
+    }
+    var pick = FACE_ACTS[Math.floor(Math.random() * FACE_ACTS.length)];
+    var guard = 0;
+    while (pick.c === faceLast) {
+      if (guard > 6) { break; }
+      pick = FACE_ACTS[Math.floor(Math.random() * FACE_ACTS.length)];
+      guard = guard + 1;
+    }
+    faceLast = pick.c;
+    facePlay(pick.c, pick.ms);
+    faceSoon(2700, 5400);
+  }
+  function faceStop() {
+    if (faceTimer !== null) { clearTimeout(faceTimer); faceTimer = null; }
+    if (faceEnd !== null) { clearTimeout(faceEnd); faceEnd = null; }
+    faceOff();
+  }
+  function faceThink(on) {
+    faceBusy = on;
+    if (!faceAwake()) { return; }
+    if (on) { facePlay("cif-think", 1540); faceSoon(1650, 1950); }
+    else { facePlay("cif-nod", 820); faceSoon(2600, 4400); }
+  }
+  document.addEventListener("visibilitychange", function () {
+    if (document.hidden) { faceStop(); return; }
+    if (panelOpen) { faceSoon(900, 2000); }
+  });
+
+  function open_(on) {
+    var p = $("ci-panel"), l = $("ci-launch");
+    panelOpen = on;
+    try { sessionStorage.setItem("ci_open", on ? "1" : "0"); } catch (e) {}
+    l.setAttribute("aria-expanded", on ? "true" : "false");
+    if (on) {
+      if (closeTimer !== null) { clearTimeout(closeTimer); closeTimer = null; }
+      p.removeAttribute("inert");
+      unread(false);
+      l.classList.add("ci-gone");
+      setTimeout(function () {
+        if (p.classList.contains("ci-shown")) { l.hidden = true; }
+      }, 150);
+      p.hidden = false;
+      void p.offsetWidth;                 /* start from the collapsed state, then transition */
+      p.classList.add("ci-shown");
+      /* the face says hello with the panel, then settles into its idle loop */
+      faceLast = "";
+      facePlay("cif-hi", 970);
+      faceSoon(1500, 2700);
+      if (!greeted) { greeted = true; greet(); }
+      toBottom();                        /* reopening lands on the newest reply, not where you left */
+      setTimeout(function () {
+        try { $("ci-q").focus({ preventScroll: true }); } catch (e) { $("ci-q").focus(); }
+      }, 120);
+    } else {
+      p.classList.remove("ci-shown");
+      p.setAttribute("inert", "");
+      faceStop();                        /* nothing keeps ticking behind a closed panel */
+      l.hidden = false;
+      void l.offsetWidth;
+      l.classList.remove("ci-gone");
+      closeTimer = setTimeout(settleClosed, 420);
+      try { l.focus({ preventScroll: true }); } catch (e) { l.focus(); }
+    }
+  }
+
+  function greet() {
+    /* a short typing beat before the first line: the assistant reads as present rather than as
+       a block of text that was always there */
+    thinking(true);
+    setTimeout(function () {
+      thinking(false);
+      say("bot", CFG.greeting);
+      chipsIntoLog();                          /* the suggestions follow the greeting */
+      toBottom();
+    }, 480);
+  }
+
+  /* The suggestions live in the transcript, so they scroll away with the greeting on their own.
+     They are NOT hidden after the first question: keeping them costs nothing once they have
+     scrolled up. `.ci-settled` stops the stagger replaying every time the panel is shown again -
+     display:none to display:flex restarts CSS animations. */
+  function chipsIntoLog() {
+    var c = $("ci-chips");
+    if (!c) { return; }
+    if (!c.children.length) { c.hidden = true; return; }
+    c.className = "ci-inlog";
+    $("ci-log").appendChild(c);
+    setTimeout(function () { c.className = "ci-inlog ci-settled"; }, 500);
+  }
+
+  /* ================= transport ================= */
+
+  function b64url(buf) {
+    return btoa(String.fromCharCode.apply(null, new Uint8Array(buf)))
+      .replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+  }
+  function redirectUri() { return location.origin + location.pathname; }
+  function saveConv() {
+    try {
+      sessionStorage.setItem("ci_conv", JSON.stringify(
+        { dl: dl, conv: conv, ctok: ctok, wm: wm, sas: sas }));
+    } catch (e) {}
+  }
+
+  async function jget(u, tok) {
+    var h = {}; if (tok) h.Authorization = "Bearer " + tok;
+    try {
+      var r = await fetch(u, { headers: h });
+      return r.ok ? r.json() : null;
+    } catch (e) { return null; }
+  }
+  async function jpost(u, body, tok) {
+    var h = { "Content-Type": "application/json" };
+    if (tok) h.Authorization = "Bearer " + tok;
+    try {
+      var r = await fetch(u, { method: "POST", headers: h, body: JSON.stringify(body || {}) });
+      if (!r.ok) return null;
+      try { return await r.json(); } catch (e2) { return {}; }
+    } catch (e) { return null; }
+  }
+
+  /* Both of these land in a URL path, so both are shape-checked even though they come from
+     this site's own settings. Cheap, and it turns a mistyped setting into a widget that does
+     not open a conversation rather than a malformed request. */
+  function activeSchema() {
+    if (!/^[A-Za-z0-9_]{1,128}$/.test(CFG.schema)) { return ""; }
+    return CFG.schema;
+  }
+  function activeEnv() {
+    var h = C.envHost || "";
+    if (!/^[A-Za-z0-9.\-]{10,120}\.environment\.api\.powerplatform\.com$/.test(h)) { return ""; }
+    return "https://" + h;
+  }
+
+  /* WHERE A CUSTOMER'S TOKEN MAY BE POSTED.
+     The OAuth card hands us a URL and we POST the signed-in visitor's access token to it.
+     Whatever produced that card therefore chooses the destination, so the host is checked
+     against Microsoft's own before the token leaves the browser: an agent that returned a
+     third-party sasUrl would otherwise be handed a live credential. The list is deliberately
+     generous - it is here to refuse somebody else's domain, not to pin one hostname - so if
+     sign-in ever fails with the console warning below, widen it rather than removing it. */
+  var TOKEN_POST_HOSTS = /(^|\.)(botframework\.com|powerplatform\.com|microsoft\.com|azure\.com|dynamics\.com)$/i;
+  function tokenPostOk(url) {
+    if (!url) { return false; }
+    var host = "";
+    try {
+      var parsed = new URL(String(url));
+      if (parsed.protocol !== "https:") { return false; }
+      host = parsed.hostname;
+    } catch (e) { return false; }
+    if (TOKEN_POST_HOSTS.test(host)) { return true; }
+    try { console.warn("claims365 assistant: refused a token post to " + host); } catch (e2) {}
+    return false;
+  }
+
+  async function connect() {
+    var env = activeEnv(), schema = activeSchema();
+    if (!env) { throw new Error("the environment host is not set correctly"); }
+    if (!schema) { throw new Error("the agent name is not set correctly"); }
+    var t = await jget(env + "/powervirtualagents/botsbyschema/" + schema
+                       + "/directline/token?" + CFG.apiv);
+    if (!t) throw new Error("the assistant is unavailable");
+    /* The Direct Line base URL is REGIONAL and comes from the environment, not from a constant.
+       The public default below is the fallback, not the answer. */
+    var rcs = await jget(env + "/powervirtualagents/regionalchannelsettings?" + CFG.apiv);
+    var baseUrl = ((rcs || {}).channelUrlsById || {}).directline;
+    if (!baseUrl) baseUrl = "https://directline.botframework.com/";
+    dl = baseUrl.replace(/\/$/, "") + "/v3/directline";
+    var c = await jpost(dl + "/conversations", {}, t.token);
+    if (!c) throw new Error("the assistant is unavailable");
+    conv = c.conversationId; ctok = c.token || t.token; wm = null;
+    await jpost(dl + "/conversations/" + conv + "/activities",
+      { type: "event", name: "startConversation", from: { id: "web", role: "user" },
+        channelData: { postBack: true } }, ctok);
+    ready = true; saveConv();
+    await pump(6000, false);        /* swallow the platform greeting, we print our own */
+  }
+
+  /* Poll one turn. NEVER calls sendRaw - nested pumps used to share the watermark and swallow
+     each other's activities, which is why answers went missing. It only collects, renders, and
+     passes the visitor's token through an OAuth card if one arrives. */
+  async function pump(maxMs, render) {
+    var end = Date.now() + maxMs;
+    var texts = [];
+    var lastText = 0;
+    while (Date.now() < end) {
+      await sleep(1200);
+      var u = dl + "/conversations/" + conv + "/activities";
+      if (wm) u = u + "?watermark=" + wm;
+      var a = await jget(u, ctok);
+      if (!a) continue;
+      wm = a.watermark || wm; saveConv();
+      var acts = a.activities || [];
+      for (var k = 0; k < acts.length; k++) {
+        var act = acts[k];
+        if ((act.from || {}).role !== "bot") continue;   /* trap 2: only the bot carries "bot" */
+        var atts = act.attachments || [];
+        for (var j = 0; j < atts.length; j++) {
+          if ((atts[j].contentType || "").indexOf("oauth") < 0) continue;
+          var cc = atts[j].content || {};
+          var url = (cc.tokenPostResource || {}).sasUrl;
+          if (tokenPostOk(url)) { sas = url; saveConv(); }
+          if (custToken) {
+            if (sas) {
+              await fetch(sas, {
+                method: "POST", headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ token: custToken })
+              });
+              authPassed = true;
+            }
+          } else if (AUTH) {
+            sys("To look that up I need you to sign in. Use Sign in just below.");
+          } else {
+            sys("That needs a signed-in account, and this page does not offer sign-in.");
+          }
+        }
+        if (act.text) {
+          texts.push(act.text);
+          lastText = Date.now();
+          if (render) {
+            thinking(false);        /* the answer replaces the dots rather than following them */
+            say("bot", act.text);
+          }
+        }
+      }
+      /* Trap 4: end of turn is inferred from silence. */
+      if (texts.length) {
+        if (Date.now() - lastText > 3200) break;
+      }
+    }
+    return texts;
+  }
+
+  /* Post one message into the conversation. A Direct Line conversation and its token expire
+     (the token after about an hour), and an expired one refuses the post. Without this every
+     later question would get "no answer", so open a fresh conversation and send once more. */
+  async function postMessage(q) {
+    var msg = { type: "message", text: q, locale: "en-GB", from: { id: "web", role: "user" } };
+    if (await jpost(dl + "/conversations/" + conv + "/activities", msg, ctok)) { return; }
+    ready = false;
+    await connect();
+    if (!(await jpost(dl + "/conversations/" + conv + "/activities", msg, ctok))) {
+      throw new Error("the assistant is unavailable");
+    }
+  }
+
+  async function sendRaw(q, render) {
+    authPassed = false;
+    await postMessage(q);
+    if (render) thinking(true);
+    var got = await pump(45000, render);
+    if (!got.length) {
+      /* The turn was consumed by the sign-in card. Now that the token is in, ask once more. */
+      if (authPassed) {
+        if (render) { thinking(true); }
+        await postMessage(q);
+        got = await pump(45000, render);
+      }
+    }
+    if (render) thinking(false);
+    return got;
+  }
+
+  /* ================= customer sign-in (optional) ================= */
+
+  async function signIn() {
+    if (!AUTH) { return; }
+    var v = b64url(crypto.getRandomValues(new Uint8Array(32)));
+    /* The PKCE verifier MUST survive the round trip. If storage is unavailable - private mode,
+       blocked cookies - say so HERE rather than failing after the redirect, where the reader has
+       left the site and cannot see any message we might print. */
+    try {
+      sessionStorage.setItem("ci_v", v);
+      sessionStorage.setItem("ci_open", "1");
+    } catch (e) {
+      throw new Error("this browser is blocking site storage, which sign-in needs. Try a "
+                    + "normal window rather than a private one.");
+    }
+    saveConv();
+    var c = b64url(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(v)));
+    var p = new URLSearchParams({
+      client_id: AUTH.clientId, response_type: "code", redirect_uri: redirectUri(),
+      scope: AUTH.scopes, code_challenge: c, code_challenge_method: "S256",
+      response_mode: "query"
+    });
+    location.href = AUTH.authority + "/oauth2/v2.0/authorize?" + p;
+  }
+
+  async function finishSignIn(code) {
+    if (!AUTH) { return; }
+    var body = new URLSearchParams({
+      client_id: AUTH.clientId, grant_type: "authorization_code", code: code,
+      code_verifier: sessionStorage.getItem("ci_v"), redirect_uri: redirectUri(),
+      scope: AUTH.scopes
+    });
+    var r = await fetch(AUTH.authority + "/oauth2/v2.0/token", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: body
+    });
+    var t = await r.json();
+    if (!t.access_token) throw new Error(t.error_description || "sign-in failed");
+    custToken = t.access_token;
+    custName = "your account";
+    try {
+      var c = JSON.parse(atob(t.id_token.split(".")[1].replace(/-/g, "+").replace(/_/g, "/")));
+      custName = c.name || c.preferred_username || "your account";
+    } catch (e) {}
+    history.replaceState({}, "", location.pathname);
+    paint();
+    /* Holding a token on the page is not enough - trap 3. The AGENT conversation must be signed
+       in too, and only an OAuthInput node prompts for that. Prime it silently. */
+    try {
+      if (!ready) await connect();
+      await sendRaw(AUTH.prime, false);
+    } catch (e) {}
+    sys("Thanks, you are signed in as " + custName + ". Ask about your own records.");
+  }
+
+  function paint() {
+    if (!AUTH) { return; }
+    var signedIn = custToken ? true : false;
+    $("ci-statust").textContent = signedIn ? "Signed in as " + custName : "Not signed in";
+    if (signedIn) { $("ci-status").classList.add("ci-on"); }
+    else { $("ci-status").classList.remove("ci-on"); }
+    $("ci-authnote").textContent = signedIn
+      ? "You will only see records on this account"
+      : "Sign in to ask about your own records";
+    /* Hiding the control that currently holds focus would drop a keyboard user back to the top
+       of the document, so hand focus to its replacement first. */
+    var active = document.activeElement;
+    var losing = signedIn ? $("ci-in") : $("ci-out");
+    $("ci-in").hidden = signedIn;
+    $("ci-out").hidden = !signedIn;
+    if (active === losing) {
+      var gaining = signedIn ? $("ci-out") : $("ci-in");
+      try { gaining.focus({ preventScroll: true }); } catch (e) { gaining.focus(); }
+    }
+  }
+
+  /* ================= asking ================= */
+
+  async function ask(text) {
+    if (sending) { return; }              /* one turn at a time: see busy() */
+    var q = (text !== undefined ? text : $("ci-q").value).trim();
+    if (!q) { return; }
+    $("ci-q").value = "";
+    $("ci-alert").textContent = "";       /* so an identical failure announces again */
+    say("me", q);
+    busy(true);
+    /* The dots go up BEFORE connect(): the first question of a session also pays for the Direct
+       Line handshake, and a motionless panel reads as a broken one. */
+    thinking(true);
+    try {
+      if (!ready) { await connect(); }
+      var got = await sendRaw(q, true);
+      if (!got.length) { sys("I did not get an answer that time. Please try again."); }
+    } catch (e) {
+      fail("Sorry, I could not reach the assistant just now. " + e.message);
+    }
+    thinking(false);
+    busy(false);
+  }
+
+  function unread(on) {
+    var l = $("ci-launch");
+    if (on) { l.classList.add("ci-unread"); } else { l.classList.remove("ci-unread"); }
+    var sr = $("ci-launchsr");
+    if (sr) {
+      sr.textContent = on ? " - new reply waiting" : " - the assistant";
+    }
+  }
+
+  /* ================= wiring ================= */
+
+  $("ci-launch").onclick = function () { open_(true); };
+  $("ci-min").onclick = function () { open_(false); };
+  /* One funnel ends a close, whichever gets there first (see settleClosed). */
+  $("ci-panel").addEventListener("transitionend", function (e) {
+    if (e.target !== $("ci-panel")) { return; }
+    if (e.propertyName !== "opacity") { return; }
+    settleClosed();
+  });
+  document.addEventListener("keydown", function (e) {
+    if (e.isComposing) { return; }        /* mid IME composition: Escape belongs to the IME */
+    if (e.keyCode === 229) { return; }
+    if (e.key !== "Escape") { return; }
+    if ($("ci-panel").hidden) { return; }
+    open_(false);
+  });
+  /* No sign-in configured means no sign-in ROW. The WordPress shortcode already omits it, but
+     the standalone file ships the markup with a "delete this if you are not using it" comment,
+     and a Sign in button that does nothing when clicked is worse than no button. Hide it here so
+     the two paths cannot disagree. */
+  if (!AUTH) {
+    var authRow = $("ci-auth");
+    if (authRow) { authRow.hidden = true; authRow.style.display = "none"; }
+  }
+  if (AUTH) {
+    $("ci-in").onclick = function () { signIn().catch(function (e) { fail(e.message); }); };
+    $("ci-out").onclick = function () {
+      custToken = null; custName = null; paint();
+      /* Sign-out has to tear down the CONVERSATION, not just our copy of the token. The Direct
+         Line conversation was signed in separately (that is what the priming message is for),
+         so leaving conv/ctok/sas alive means the agent still answers personal questions for the
+         visitor who just signed out - while the panel says they are signed out. The next
+         question starts a fresh conversation. */
+      ready = false; conv = null; ctok = null; wm = null; sas = null; authPassed = false;
+      /* Drop the stored transcript too. What is on screen stays, because wiping the panel
+         mid-conversation is startling, but a later reload must not replay one person's details
+         to whoever opens the page next on a shared machine. */
+      hist = [];
+      try {
+        sessionStorage.removeItem("ci_hist");
+        sessionStorage.removeItem("ci_conv");
+      } catch (e) {}
+      sys("You are signed out. I can still answer general questions.");
+    };
+  }
+  $("ci-send").onclick = function () { ask(); };
+  $("ci-q").addEventListener("keydown", function (e) {
+    if (e.isComposing) { return; }        /* Enter is committing a candidate, not sending */
+    if (e.keyCode === 229) { return; }
+    if (e.key === "Enter") { e.preventDefault(); ask(); }
+  });
+  Array.prototype.forEach.call(document.querySelectorAll("#ci-assistant .ci-chip"), function (c) {
+    c.onclick = function () { ask(c.textContent); };
+  });
+  /* Let anything on the page open the panel: <a href="#claims-assistant"> or class="ci-open". */
+  Array.prototype.forEach.call(
+    document.querySelectorAll('a[href="#claims-assistant"],.ci-open'), function (a) {
+      a.addEventListener("click", function (e) { e.preventDefault(); open_(true); });
+    });
+
+  /* Signing in leaves and re-enters the page, and the conversation id already survives that.
+     The words on screen did not, so the reader came back to an empty panel and a repeated
+     greeting. Replay what was said, unanimated. */
+  function replay() {
+    var saved = null;
+    try { saved = JSON.parse(sessionStorage.getItem("ci_hist") || "null"); } catch (e) {}
+    if (!saved) { return false; }
+    if (!saved.length) { return false; }
+    hist = saved;
+    for (var i = 0; i < saved.length; i++) {
+      var it = saved[i];
+      if (it.w === "sys") { paint_sys(it.t, false); } else { paint_msg(it.w, it.t, false); }
+    }
+    toBottom();
+    return true;
+  }
+
+  paint();
+  if (replay()) {
+    greeted = true;                       /* do not greet a reader we have already greeted */
+    chipsIntoLog();                       /* suggestions belong with the transcript */
+    toBottom();
+  }
+  var code = AUTH ? new URLSearchParams(location.search).get("code") : null;
+  var wasOpen = false;
+  try { wasOpen = sessionStorage.getItem("ci_open") === "1"; } catch (e) {}
+  if (code) {
+    open_(true);
+    try {
+      var saved2 = JSON.parse(sessionStorage.getItem("ci_conv") || "null");
+      if ((saved2 || {}).conv) {
+        dl = saved2.dl; conv = saved2.conv; ctok = saved2.ctok; wm = saved2.wm;
+        /* re-checked on the way back in: storage is not a trust boundary either */
+        sas = tokenPostOk(saved2.sas) ? saved2.sas : null;
+        ready = true;
+      }
+    } catch (e) {}
+    finishSignIn(code).catch(function (e) { fail(e.message); });
+  } else if (wasOpen) {
+    open_(true);
+  }
+})();
+</script>

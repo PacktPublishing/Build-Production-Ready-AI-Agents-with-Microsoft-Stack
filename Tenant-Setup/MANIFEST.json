@@ -1,0 +1,170 @@
+{
+ "pack": "Claims 365 setup pack",
+ "solution": "Claims365SetupPack",
+ "friendly_name": "Claims 365 - Setup Pack",
+ "version": "1.0.0.0",
+ "managed": false,
+ "source": "Claims 365 course environment",
+ "exported": "2026-08-24T08:46:46Z",
+ "tables": [
+  {
+   "logical": "cp_policy",
+   "module": "M1",
+   "purpose": "Policies - the three policyholders and their cover"
+  },
+  {
+   "logical": "cp_claim",
+   "module": "M1",
+   "purpose": "Claims - carries the settlement sentence Chapter 2 turns on"
+  },
+  {
+   "logical": "cp_repairer",
+   "module": "M1",
+   "purpose": "Approved repairers, one deliberately Suspended"
+  },
+  {
+   "logical": "cp_guidance",
+   "module": "M1",
+   "purpose": "Claims guidance articles"
+  },
+  {
+   "logical": "cp_entitlement",
+   "module": "M1",
+   "purpose": "Which signed-in customer may see which claim (Chapter 3's customer sign-in only)"
+  },
+  {
+   "logical": "cp_submission",
+   "module": "M2",
+   "purpose": "Claim submissions from the web form, with the triage verdict"
+  },
+  {
+   "logical": "cp_claimant",
+   "module": "M3",
+   "purpose": "The people in the claims book - what a fraud ring shares"
+  },
+  {
+   "logical": "cp_bookclaim",
+   "module": "M3",
+   "purpose": "The claims book itself"
+  },
+  {
+   "logical": "cp_fraudreferral",
+   "module": "M3",
+   "purpose": "What the fraud desk writes when a human approves"
+  },
+  {
+   "logical": "cp_referralclaim",
+   "module": "M3",
+   "purpose": "One line per claim on a referral"
+  }
+ ],
+ "flows": [
+  "Claims 365 Claim Lookup",
+  "Claims 365 Policy Lookup",
+  "Claims 365 Repairer Lookup",
+  "Claims 365 Guidance Lookup",
+  "Claims 365 Entitlement Lookup",
+  "Claims 365 Customer Claim Lookup"
+ ],
+ "role": "Claims 365 Attendee",
+ "not_included": {
+  "agents": "None. You build the agents yourself - that is what the book's chapters walk you through.",
+  "module2_evidence": "The damage photographs and repair quotes are in the same repository, under Course/Module2/evidence/.",
+  "rows_for_four_tables": "Submission, Fraud Referral, Referral Claim and Entitlement ship empty by design - they fill up as you work through the chapters."
+ },
+ "data_files": [
+  {
+   "file": "Policy.csv",
+   "table": "cp_policy",
+   "display_name": "Policy",
+   "module": "M1",
+   "rows": 3,
+   "columns": [
+    "cp_policynumber",
+    "cp_coveredperils",
+    "cp_dateofbirth",
+    "cp_excess",
+    "cp_exclusions",
+    "cp_policyholder",
+    "cp_policystatus",
+    "cp_postcode",
+    "cp_productline"
+   ]
+  },
+  {
+   "file": "Claim.csv",
+   "table": "cp_claim",
+   "display_name": "Claim",
+   "module": "M1",
+   "rows": 3,
+   "columns": [
+    "cp_claimreference",
+    "cp_amountclaimed",
+    "cp_cause",
+    "cp_claimstatus",
+    "cp_dateofloss",
+    "cp_nextaction",
+    "cp_policynumber"
+   ]
+  },
+  {
+   "file": "Approved Repairer.csv",
+   "table": "cp_repairer",
+   "display_name": "Approved Repairer",
+   "module": "M1",
+   "rows": 3,
+   "columns": [
+    "cp_repairername",
+    "cp_phone",
+    "cp_region",
+    "cp_repairerstatus",
+    "cp_specialism"
+   ]
+  },
+  {
+   "file": "Claims Guidance.csv",
+   "table": "cp_guidance",
+   "display_name": "Claims Guidance",
+   "module": "M1",
+   "rows": 3,
+   "columns": [
+    "cp_title",
+    "cp_body",
+    "cp_category"
+   ]
+  },
+  {
+   "file": "Claimant.csv",
+   "table": "cp_claimant",
+   "display_name": "Claimant",
+   "module": "M3",
+   "rows": 186,
+   "columns": [
+    "cp_claimantref",
+    "cp_bankaccount",
+    "cp_email",
+    "cp_fullname",
+    "cp_phone",
+    "cp_postcode"
+   ]
+  },
+  {
+   "file": "Book Claim.csv",
+   "table": "cp_bookclaim",
+   "display_name": "Book Claim",
+   "module": "M3",
+   "rows": 234,
+   "columns": [
+    "cp_bookclaimref",
+    "cp_amountclaimed",
+    "cp_claimantref",
+    "cp_claimstatus",
+    "cp_claimtype",
+    "cp_incidentdate",
+    "cp_incidentpostcode",
+    "cp_repairername"
+   ]
+  }
+ ],
+ "note": "Import the solution FIRST (it creates the tables), then Publish all customizations, then the CSVs. None of the seeded tables uses a lookup column, so the CSVs can be loaded in any order."
+}

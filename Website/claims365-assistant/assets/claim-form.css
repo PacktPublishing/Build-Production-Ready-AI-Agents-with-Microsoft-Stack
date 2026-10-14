@@ -1,0 +1,278 @@
+/* Claim form.
+ *
+ * Every selector is prefixed .c365-cf so nothing here can reach the rest of the page. Change
+ * the tokens at the top and the whole form re-skins; the palette matches assistant.css, so the
+ * widget and the form read as one system.
+ *
+ * DO NOT set `display` on #c365-cf-issued. claim-form.js shows and hides it with the `hidden`
+ * PROPERTY, which works through the user-agent rule [hidden]{display:none}. Any display
+ * declaration on it wins over that rule and the element becomes permanently visible. The guard
+ * below exists so that mistake fails safe if it is ever made.
+ */
+
+.c365-cf {
+  --cf-ink: #12211F;
+  --cf-sand: #FAF8F4;
+  --cf-mist: #E7EEEA;
+  --cf-petrol: #0C3B3C;
+  --cf-slate: #4E5E5B;
+  --cf-white: #FFFFFF;
+  --cf-ochre: #C8892F;
+  --cf-ochre-soft: #F5E7CF;
+  --cf-ochre-ink: #8A5A12;
+  --cf-editorial: Georgia, "Iowan Old Style", Palatino, serif;
+  --cf-rule: rgba(18, 33, 31, .18);
+  --cf-radius: 6px;
+
+  max-width: 46rem;
+  color: var(--cf-ink);
+}
+
+/* The guard. See the header note. */
+.c365-cf [hidden] { display: none !important; }
+
+/* ------------------------------------------------------------- labels and helper text */
+
+.c365-cf label {
+  display: block;
+  font-weight: 600;
+  font-size: .95rem;
+  letter-spacing: -.005em;
+  margin: 1.1rem 0 .35rem;
+}
+.c365-cf .c365-cf-opt { font-weight: 400; color: var(--cf-slate); }
+
+/* Slate rather than opacity. Muted text is set in a colour chosen to pass AA on every light
+   ground here; fading ink with opacity re-breaks exactly what choosing that colour fixed. */
+.c365-cf-hint {
+  font-size: .85rem;
+  line-height: 1.5;
+  color: var(--cf-slate);
+  margin: .4rem 0 0;
+}
+
+/* ------------------------------------------------------------------------------ fields */
+
+.c365-cf input[type=text],
+.c365-cf input[type=email],
+.c365-cf input[type=tel],
+.c365-cf input[type=number],
+.c365-cf input:not([type]),
+.c365-cf select,
+.c365-cf textarea {
+  width: 100%;
+  padding: .6rem .75rem;
+  border: 1px solid var(--cf-rule);
+  border-radius: var(--cf-radius);
+  background: var(--cf-white);
+  color: var(--cf-ink);
+  font: inherit;
+  line-height: 1.4;
+  transition: border-color .15s ease;
+}
+.c365-cf textarea { resize: vertical; }
+
+.c365-cf input::placeholder,
+.c365-cf textarea::placeholder { color: var(--cf-slate); opacity: .75; }
+
+.c365-cf input:hover,
+.c365-cf select:hover,
+.c365-cf textarea:hover { border-color: var(--cf-slate); }
+
+/* Ochre is the single signal colour, and a focus ring is a fill rather than small text, which
+   is the one place plain ochre carries enough contrast to be used. */
+.c365-cf input:focus-visible,
+.c365-cf select:focus-visible,
+.c365-cf textarea:focus-visible,
+.c365-cf button:focus-visible {
+  outline: 2px solid var(--cf-ochre);
+  outline-offset: 2px;
+  border-color: var(--cf-petrol);
+}
+
+.c365-cf input[type=file] {
+  font: inherit;
+  font-size: .9rem;
+  color: var(--cf-slate);
+  max-width: 100%;
+}
+.c365-cf input[type=file]::file-selector-button {
+  margin-right: .7rem;
+  padding: .4rem .9rem;
+  border: 1px solid var(--cf-petrol);
+  border-radius: var(--cf-radius);
+  background: transparent;
+  color: var(--cf-petrol);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+.c365-cf input[type=file]::file-selector-button:hover {
+  background: var(--cf-petrol);
+  color: var(--cf-sand);
+}
+
+/* ------------------------------------------------------------------------------ layout */
+
+.c365-cf-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0 1.1rem;
+  align-items: start;
+}
+@media (max-width: 640px) { .c365-cf-grid { grid-template-columns: 1fr; } }
+
+/* ----------------------------------------------------------------------------- buttons */
+
+/* A block theme usually styles buttons through elements.button, which only reaches
+   .wp-element-button - and a bare <button> in a shortcode never matches it. Without these
+   rules Submit renders as the browser grey default. */
+.c365-cf button {
+  padding: .7rem 1.5rem;
+  border: 1px solid transparent;
+  border-radius: var(--cf-radius);
+  background: var(--cf-petrol);
+  color: var(--cf-sand);
+  font: inherit;
+  font-weight: 600;
+  line-height: 1.2;
+  cursor: pointer;
+  transition: background-color .15s ease, color .15s ease;
+}
+.c365-cf button:hover:not([disabled]) { background: var(--cf-ochre); color: var(--cf-ink); }
+.c365-cf button[disabled] { opacity: .5; cursor: default; }
+
+/* Submit is the end of the form, not a neighbour of the last field. */
+#c365-cf-go { display: block; margin-top: 1.6rem; }
+
+/* -------------------------------------------------------------------- status and result */
+
+.c365-cf-status {
+  margin-top: .8rem;
+  font-size: .95rem;
+  color: var(--cf-slate);
+  min-height: 1.4em;   /* reserved, so the layout does not jump when a message arrives */
+}
+
+/* The reference the desk issues. The loudest thing after submit: it is the one value the
+   claimant has to keep. A 3px rule on TOP, never a coloured left border. */
+.c365-cf .c365-cf-issued {
+  margin: 1rem 0 0;
+  padding: .8rem 1rem;
+  border-top: 3px solid var(--cf-ochre);
+  border-radius: 0 0 var(--cf-radius) var(--cf-radius);
+  background: var(--cf-ochre-soft);
+  color: var(--cf-ink);
+  font-size: 1.02rem;
+  line-height: 1.45;
+}
+.c365-cf .c365-cf-issued b {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: .97em;
+}
+
+.c365-cf-result {
+  margin-top: 1.6rem;
+  border: 0;
+  border-top: 3px solid var(--cf-ochre);
+  border-radius: 0 0 var(--cf-radius) var(--cf-radius);
+  background: var(--cf-mist);
+  padding: 1.2rem 1.35rem 1.35rem;
+}
+.c365-cf-ref {
+  font-family: var(--cf-editorial);
+  font-size: 1.5rem;
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: -.012em;
+}
+
+.c365-cf-flag {
+  display: inline-block;
+  margin-top: .1rem;
+  padding: .2rem .75rem;
+  border: 1px solid currentColor;
+  border-radius: 999px;
+  font-size: .82rem;
+  font-weight: 700;
+  text-transform: capitalize;
+}
+/* ROUTING IS STATED AS TEXT AS WELL AS COLOUR, so meaning never depends on hue - which matters
+   more here than in most places, because this is the field a claims system branches on. These
+   three are tuned to pass AA on the mist ground above. */
+.c365-cf-flag.desk    { color: #9B2226; }
+.c365-cf-flag.through { color: #0B5C2F; }
+.c365-cf-flag.review  { color: var(--cf-ochre-ink); }
+
+.c365-cf-kv {
+  display: grid;
+  grid-template-columns: minmax(9rem, 14rem) 1fr;
+  gap: 0 1rem;
+  margin: 1rem 0 0;
+}
+.c365-cf-kv dt,
+.c365-cf-kv dd {
+  padding: .45rem 0;
+  border-top: 1px solid var(--cf-rule);
+  margin: 0;
+}
+.c365-cf-kv dt { color: var(--cf-slate); font-size: .92rem; }
+.c365-cf-kv dd b { color: var(--cf-petrol); }
+@media (max-width: 520px) {
+  .c365-cf-kv { grid-template-columns: 1fr; }
+  .c365-cf-kv dd { border-top: 0; padding-top: 0; }
+}
+
+.c365-cf-result ul { margin: .5rem 0 0 1.1rem; padding: 0; }
+.c365-cf-result li { margin: .25rem 0; }
+.c365-cf-result .c365-cf-hint { margin-top: 1rem; }
+
+/* -------------------------------------------------------------------- evidence figures */
+
+/* One figure treatment serves both places an evidence image appears: the preview under a file
+   input the moment it is picked, and the pair inside the result card beside the verdict. */
+.c365-cf-figure {
+  margin: .6rem 0 0;
+  border: 1px solid var(--cf-rule);
+  border-radius: var(--cf-radius);
+  overflow: hidden;
+  background: var(--cf-white);
+}
+/* contain, not cover: a repair quote is a DOCUMENT, and cropping a document to make it prettier
+   would hide exactly the line items the assessment argues about. */
+.c365-cf-figure img {
+  display: block;
+  width: 100%;
+  height: 11rem;
+  object-fit: contain;
+  background: var(--cf-white);
+}
+.c365-cf-figure figcaption {
+  padding: .5rem .75rem .55rem;
+  border-top: 1px solid var(--cf-rule);
+  font-size: .82rem;
+  line-height: 1.4;
+  color: var(--cf-slate);
+  overflow-wrap: anywhere;
+}
+.c365-cf-figure figcaption b {
+  display: block;
+  font-size: .72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .09em;
+  margin-bottom: .1rem;
+}
+
+.c365-cf-evidence {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  margin: 1rem 0 .2rem;
+}
+.c365-cf-evidence .c365-cf-figure { margin: 0; }
+@media (max-width: 640px) { .c365-cf-evidence { grid-template-columns: 1fr; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .c365-cf input, .c365-cf select, .c365-cf textarea, .c365-cf button { transition: none; }
+}

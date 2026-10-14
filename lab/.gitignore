@@ -1,0 +1,4 @@
+.env
+_checkpoints/
+__pycache__/
+*.pyc

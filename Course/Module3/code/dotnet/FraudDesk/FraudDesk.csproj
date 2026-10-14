@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <!-- .NET 8 leaves support on 10 Nov 2026. Run on a newer runtime when 8 is not installed. -->
+    <RollForward>Major</RollForward>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Agent Framework: agents, the OpenAI-compatible chat client, and workflows. -->
+    <PackageReference Include="Microsoft.Agents.AI" Version="1.17.0" />
+    <PackageReference Include="Microsoft.Agents.AI.OpenAI" Version="1.17.0" />
+    <PackageReference Include="Microsoft.Agents.AI.Workflows" Version="1.17.0" />
+    <!-- Writes each executor's routing from its [MessageHandler] methods at compile time. -->
+    <PackageReference Include="Microsoft.Agents.AI.Workflows.Generators" Version="1.17.0" />
+    <!-- Sign-in: the device-code flow, token refresh and an OS-protected token cache. -->
+    <PackageReference Include="Azure.Identity" Version="1.21.0" />
+    <!-- Optional tracing, the telemetry flag: spans to the terminal and, when
+         APPLICATIONINSIGHTS_CONNECTION_STRING is set, to Application Insights. -->
+    <PackageReference Include="OpenTelemetry" Version="1.12.0" />
+    <PackageReference Include="Azure.Monitor.OpenTelemetry.Exporter" Version="1.4.0" />
+  </ItemGroup>
+
+</Project>

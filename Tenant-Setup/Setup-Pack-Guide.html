@@ -1,0 +1,437 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Claims 365 setup pack</title>
+<style>
+:root{--ink:#16181d;--muted:#5c6370;--line:#e3e6ec;--accent:#5b35d5;--accent-soft:#f2eeff;
+--good:#177245;--good-bg:#e7f6ec;--mid:#8a5b00;--mid-bg:#fdf3d9;--bad:#b3362c;--bad-bg:#fbe9e7;
+--code:#f4f5f8}
+*{box-sizing:border-box}
+body{margin:0;background:#fbfbfd;color:var(--ink);
+font:16px/1.55 -apple-system,"Segoe UI",Roboto,Arial,sans-serif}
+.hero{background:linear-gradient(135deg,var(--accent),#7b5cf0);color:#fff;padding:34px 24px}
+.hero .in{max-width:1000px;margin:0 auto}
+.hero h1{margin:0 0 .25em;font-size:2rem}
+.hero p{margin:0;opacity:.94;max-width:84ch}
+.wrap{max-width:1000px;margin:0 auto;padding:24px 24px 60px}
+h2{font-size:1.28rem;margin:36px 0 4px;padding-top:14px;border-top:3px solid var(--accent)}
+h2 .ph{display:inline-block;background:var(--accent);color:#fff;border-radius:6px;
+font-size:12px;font-weight:800;padding:3px 9px;vertical-align:middle;margin-right:9px}
+.sub{margin:0 0 12px;color:var(--muted);font-size:14px}
+h3{font-size:1.02rem;margin:20px 0 6px}
+p{max-width:94ch}
+code{background:var(--code);border-radius:4px;padding:1px 5px;font-size:13px;
+font-family:ui-monospace,Consolas,"Courier New",monospace;word-break:break-word}
+.tblwrap{overflow-x:auto;border:1px solid var(--line);border-radius:10px;background:#fff;margin:10px 0}
+table{border-collapse:collapse;width:100%;min-width:560px}
+th,td{padding:9px 12px;border-bottom:1px solid var(--line);vertical-align:top;text-align:left;font-size:14px}
+thead th{background:var(--accent);color:#fff;font-size:13.5px}
+tbody tr:last-child td{border-bottom:none}
+tbody tr:nth-child(even) td{background:#fafafe}
+td.n{width:34px;font-weight:800;color:var(--accent);text-align:right}
+td.t{width:26%;font-weight:650}
+.trap{display:block;margin-top:5px;color:var(--bad);font-size:13px}
+.note{border-left:5px solid var(--accent);background:var(--accent-soft);border-radius:0 9px 9px 0;
+padding:10px 15px;margin:12px 0;font-size:14px;max-width:98ch}
+.note p{margin:0 0 .5em}.note p:last-child{margin:0}
+.note b.lbl{display:block;margin-bottom:3px}
+.warn{border-color:#e0a02c;background:#fff8e8}
+.stop{border-color:var(--bad);background:var(--bad-bg)}
+.ok{border-color:var(--good);background:var(--good-bg)}
+.skip{border-color:#8492a6;background:#f4f7fa}
+.pill{display:inline-block;border-radius:999px;padding:1px 9px;font-size:11.5px;font-weight:800}
+.p-m1{background:#e7f6ec;color:var(--good)}
+.p-m2{background:#e8f0fe;color:#1a4fa0}
+.p-m3{background:#fdf3d9;color:var(--mid)}
+.p-all{background:var(--accent-soft);color:var(--accent)}
+.foot{margin-top:32px;padding-top:14px;border-top:1px solid var(--line);
+color:var(--muted);font-size:13px;max-width:100ch}
+a{color:var(--accent)}
+ol,ul{max-width:94ch}
+@media print{.hero{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
+</style></head><body>
+<header class="hero"><div class="in">
+<h1>Claims 365 setup pack</h1>
+<p>Everything the Claims 365 exercises need in Dataverse, packaged so you can import it into your own
+tenant through the browser. One solution file, six spreadsheets, and about an hour — twenty
+minutes of clicking and the rest waiting for imports to run. No scripts, no command line, nothing
+to install.</p>
+</div></header>
+<div class="wrap">
+
+<div class="note ok">
+<b class="lbl">✅ No compiled code, no scripts — and six flows that do run</b>
+<p>Being precise, because the difference matters to whoever approves this: there is <b>no compiled code, no script and no macro</b> anywhere in this pack. There <b>are</b> six Power Automate flows, which are executable logic — they run as you, they are itemised below, and you can read every one before you turn it on.</p>
+<p>The pack contains exactly four kinds of file: a <b>.zip</b> Dataverse solution (which is XML
+inside — open it and read it), <b>.csv</b> spreadsheets (plain text), a <b>.json</b> schema, and
+<b>.txt</b>/<b>.html</b> documents. There is no <code>.exe</code>, no <code>.dll</code>, no
+<code>.ps1</code>, no macro-enabled Office file and no <code>.js</code> anywhere in it. CSV was
+chosen over XLSX deliberately: a <code>.csv</code> is incapable of carrying a macro, and you can
+read every row in Notepad before you import it.</p>
+<p><code>CHECKSUMS.txt</code> lists a SHA-256 for every file. On Windows,
+<code>Get-FileHash &lt;file&gt;</code> confirms one. Nothing in this pack asks you for a password, a
+key or a token.</p>
+</div>
+
+<h2><span class="ph">1</span> What is in the pack</h2>
+<div class="tblwrap"><table>
+<thead><tr><th>File</th><th>What it is</th></tr></thead>
+<tbody>
+<tr><td><code>Claims365SetupPack_1_0_0_0.zip</code></td><td><b>The solution.</b> Creates all ten
+<code>cp_</code> tables, the six lookup flows, the Dataverse connection reference and the
+<b>Claims 365 Attendee</b> security role. Unmanaged, so you can open the flows and read how they
+work — which is most of the point.</td></tr>
+<tr><td><code>data/Policy.csv</code> <span class="pill p-m1">M1</span></td><td>3 policies, including the postcodes Chapter 2's lookup tools verify against</td></tr>
+<tr><td><code>data/Claim.csv</code> <span class="pill p-m1">M1</span></td><td>3 claims. One carries the settlement sentence Chapter 2's first test turns on</td></tr>
+<tr><td><code>data/Approved Repairer.csv</code> <span class="pill p-m1">M1</span></td><td>3 repairers, one deliberately Suspended</td></tr>
+<tr><td><code>data/Claims Guidance.csv</code> <span class="pill p-m1">M1</span></td><td>3 guidance articles</td></tr>
+<tr><td><code>data/Claimant.csv</code> <span class="pill p-m3">M3</span></td><td>186 claimants — the people a fraud ring shares details with</td></tr>
+<tr><td><code>data/Book Claim.csv</code> <span class="pill p-m3">M3</span></td><td>234 claims: the claims book the fraud desk investigates</td></tr>
+<tr><td><code>All-six-tables.zip</code></td><td>The same six CSVs in one archive, for the import
+wizard route in step 6b</td></tr>
+<tr><td><code>module1/M1-Part7-evaluate-testset.csv</code> <span class="pill p-m1">M1</span></td><td>The six-case test set you upload in Chapter 3's evaluation</td></tr>
+<tr><td><code>module1/frontline-instructions.txt</code> <span class="pill p-m1">M1</span></td><td>The Frontline agent's instructions. Paste them from this file in Chapter 2 rather than copying them out of the book</td></tr>
+<tr><td><code>module2/triage-agent-instructions.txt</code> <span class="pill p-m2">M2</span></td><td>The instructions you paste into the Triage agent in the Foundry portal</td></tr>
+<tr><td><code>module2/claim_assessment.schema.json</code> <span class="pill p-m2">M2</span></td><td>The strict output schema you paste into the same agent</td></tr>
+<tr><td><code>MANIFEST.json</code> · <code>CHECKSUMS.txt</code> · <code>README.txt</code></td><td>Inventory, hashes, and a plain-text version of this page</td></tr>
+</tbody></table></div>
+
+<p>The damage photographs and repair quotes for Chapter 4 are <b>not</b> in this folder. They are in
+the same repository, under <code>Course/Module2/evidence/</code>.</p>
+
+<h3>What is actually inside the solution file, for anyone who has to sign it off</h3>
+<p>If a security reviewer has to approve this, hand them this section. Unzip
+<code>Claims365SetupPack_1_0_0_0.zip</code> and you will find <b>exactly nine files</b> and nothing
+else:</p>
+<div class="tblwrap"><table>
+<tbody>
+<tr><td class="t"><code>solution.xml</code></td><td>The component list. 5 KB</td></tr>
+<tr><td class="t"><code>customizations.xml</code></td><td>Every table, column and the security role,
+as XML. 934 KB, and readable</td></tr>
+<tr><td class="t"><code>[Content_Types].xml</code></td><td>The archive's own manifest. 258 bytes</td></tr>
+<tr><td class="t"><code>Workflows/</code> (6 files)</td><td>One JSON definition per flow, 2–10 KB each,
+also readable</td></tr>
+</tbody></table></div>
+
+<div class="note warn">
+<b class="lbl">⚠️ Four things a reviewer will find, and what each one is</b>
+<p><b>1. The words <code>PluginAssembly</code>, <code>PluginType</code> and
+<code>SdkMessageProcessingStep</code> appear in <code>customizations.xml</code>.</b> They are not
+assemblies. They are the names of <i>read privileges</i> on the security role
+(<code>prvReadPluginAssembly</code> and friends) — the defaults Dataverse gives any new custom role.
+A solution carrying a real plug-in ships the compiled DLL as a base64 <code>&lt;Content&gt;</code>
+element. Search this file for <code>&lt;Content&gt;</code> or <code>base64</code>: <b>both return
+zero</b>. There is also no <code>WebResource</code> (which is how JavaScript would arrive) and
+<code>&lt;CustomControls /&gt;</code> is an empty element.</p>
+<p><b>2. Every flow references <code>schema.management.azure.com</code>.</b> That is the
+<code>$schema</code> declaration every Power Automate flow definition carries. It is a namespace
+identifier, not a call, and nothing fetches it.</p>
+<p><b>3. One GUID is hardcoded</b>, in <i>Claims 365 Customer Claim Lookup</i>: a directory
+(tenant) id belonging to the course's demo Entra External ID tenant. It is the value the flow checks
+a customer's sign-in token was issued by. A tenant id is not a secret — every tenant's is public and
+discoverable — and it grants nothing. But <b>you must replace it with your own external tenant's id
+if you reproduce the customer sign-in path</b>, or your gate validates against a directory you do not
+control and refuses everyone. Chapter 1, <i>Creating the external customer directory</i>, says where. Not
+doing Chapter 3's customer sign-in? Delete that flow.</p>
+<p><b>4. One flow makes one genuine outbound call.</b> <i>Claims 365 Customer Claim Lookup</i> calls
+<code>https://graph.microsoft.com/oidc/userinfo</code> to validate a signed-in customer's token — it
+is the identity check that makes Chapter 3's customer sign-in gate real, and it is deliberate. <b>The other
+five flows talk only to Dataverse.</b> If you are not reproducing the customer sign-in path, you can
+delete that flow after import and nothing else changes.</p>
+</div>
+
+<h3>What the security role grants</h3>
+<p><b>Claims 365 Attendee</b> is a custom role with 25 privileges. Nothing in it touches a standard
+Dataverse table beyond the defaults a new role is created with:</p>
+<div class="tblwrap"><table>
+<thead><tr><th>Privilege</th><th>On what</th></tr></thead>
+<tbody>
+<tr><td><b>Read</b>, organisation-wide</td><td>The six data tables: Policy, Claim, Approved Repairer,
+Claims Guidance, Claimant, Book Claim</td></tr>
+<tr><td><b>Read + Create</b> organisation-wide, <b>Write / Append</b> on own records</td><td>The two
+referral tables Chapter 5's Fraud Desk writes to</td></tr>
+<tr><td><b>Read</b></td><td>Plug-in assembly, plug-in type and SDK message metadata — Dataverse
+defaults on any new role, and read-only</td></tr>
+<tr><td><b>Read / Create / Write</b></td><td>SharePoint document location metadata — also a default
+on a new role. It does not grant access to any SharePoint site</td></tr>
+</tbody></table></div>
+<p>There is <b>no Delete privilege at any depth</b>, on anything. The role grants nothing outside the
+ten <code>cp_</code> tables and those Dataverse defaults, and assigning it to yourself cannot widen
+anyone else's access.</p>
+
+<h2><span class="ph">2</span> Before you import</h2>
+
+<div class="note warn">
+<b class="lbl">⚠️ Import into an environment you created for this, not your default one</b>
+<p>Do not have one yet? <b>Chapter 1, <i>Creating the Dataverse environment</i>,
+creates it</b> in about ten minutes.</p>
+<p>Two reasons, and the second is the one people regret. First, some tenants switch on <b>Block
+unmanaged customizations</b>, which refuses this import outright and also stops Copilot Studio
+publishing an agent — so it breaks the exercises, not just the pack. A fresh environment you make
+yourself will not have it. Second, <b>deleting the environment is the only teardown that actually
+removes everything</b> (see section 9).</p>
+<p>If you already use the <code>cp</code> prefix for your own work, a separate environment stops the
+two colliding.</p>
+</div>
+
+<div class="tblwrap"><table>
+<thead><tr><th>You need</th><th>Why</th></tr></thead>
+<tbody>
+<tr><td>A Dataverse environment you can administer</td><td>The pack creates tables, so you need
+<b>System Administrator</b> or <b>System Customizer</b> in it</td></tr>
+<tr><td>A licence, and Read-Write access mode</td><td>An unlicensed account falls back to
+Administrative access mode and the import fails with a <i>missing privilege</i> error that does not
+mention licensing</td></tr>
+<tr><td><b>Environment Maker</b></td><td>Separately required to import data from a spreadsheet</td></tr>
+<tr><td>Copilot Studio capacity or pay-as-you-go</td><td>Only when you later run the flows from a
+<i>published</i> agent. <b>You do not need a Power Automate Premium seat</b> — agent flows bill
+against Copilot Studio, not Power Automate. <b>And you can test on a trial:</b> runs from the flow
+designer and from the agent's own test chat do not consume capacity, so a trial licence is enough to
+import this pack and see every flow work</td></tr>
+</tbody></table></div>
+
+<div class="note stop">
+<b class="lbl">🚨 If you are on the Power Apps Developer Plan, read this now</b>
+<p>Microsoft does not include <b>Get data from Excel</b> or <b>Export data</b> in the Power Apps
+Developer Plan. The per-table import in step 6a will simply not be there, and it looks exactly like
+the pack being broken.</p>
+<p>Use <b>step 6b</b> instead — the Data import wizard in the Power Platform admin center, which is
+available to you and takes all six files in one pass. The same applies in GCC, GCC High and DoD,
+where the per-table import is also unavailable.</p>
+</div>
+
+<h2><span class="ph">3</span> Create the Dataverse connection first</h2>
+<p class="sub">Two minutes now saves the most common failure in the whole process.</p>
+<p>In <a href="https://make.powerapps.com" target="_blank" rel="noopener">make.powerapps.com</a>,
+check the <b>environment picker at the top right</b> is on the environment you are setting up, then
+go to <b>Data → Connections → + New connection</b>, search for <b>Microsoft Dataverse</b>, and
+select <b>Create</b>. Sign in when prompted.</p>
+
+<div class="note warn">
+<b class="lbl">⚠️ Do this before the import, and do the whole setup as one identity</b>
+<p>The import wizard will let you create a connection halfway through, but it opens a second browser
+window and people lose their place. More importantly: <b>whoever runs the import owns every
+component in it</b> — the flows and the connection reference included. If a colleague or an admin
+imports "to help", you will not be able to turn the flows on. Connection-reference ownership cannot
+be reassigned from the modern Solutions area, so this is much cheaper to get right than to fix.</p>
+</div>
+
+<h2><span class="ph">4</span> Import the solution</h2>
+<div class="tblwrap"><table>
+<tbody>
+<tr><td class="n">1</td><td class="t">Solutions → Import solution</td><td>In the left navigation of
+make.powerapps.com. If <b>Solutions</b> is not shown, it is under <b>… More</b>.</td></tr>
+<tr><td class="n">2</td><td class="t">Choose "This device"</td><td>Then <b>Browse</b>, pick
+<code>Claims365SetupPack_1_0_0_0.zip</code>, and select <b>Next</b>. The other option, Pipeline,
+needs infrastructure you do not have and does not apply.</td></tr>
+<tr><td class="n">3</td><td class="t">Leave the advanced setting ticked</td><td>Under <b>Advanced
+settings</b>, leave <b>Enable Plugin steps and flows included in the solution</b> selected, so the
+six flows get their best chance of arriving switched on.
+<span class="trap">The name is alarming and the setting is not: <b>this solution contains no plug-in
+steps.</b> The checkbox only governs whether the six flows arrive on or off.</span></td></tr>
+<tr><td class="n">4</td><td class="t">Bind the connection</td><td><b>This is the step that
+matters.</b> A <b>Connections</b> page appears because the pack carries a connection reference.
+Choose the Dataverse connection you made in section 3.
+<span class="trap"><b>Skip it and the import still reports success</b> — then all six flows sit dead,
+refusing to turn on, or failing at run time with <i>Connection reference was not given by
+invoker</i>.</span></td></tr>
+<tr><td class="n">5</td><td class="t">Import, and wait</td><td>It runs in the background and takes a
+few minutes. Do not start anything else against the environment while it runs — a concurrent
+operation is refused. If it fails, the Solutions page offers <b>Download Log File</b>, which names
+the exact component and privilege.</td></tr>
+</tbody></table></div>
+
+<div class="note skip">
+<b class="lbl">⬜ A warning you can safely ignore</b>
+<p>If you see <i>"This solution was exported from a … environment, which has more components than
+the current environment"</i>, that is a warning about schema type, not a failure. Proceed if no
+other error appears.</p>
+</div>
+
+<h2><span class="ph">5</span> Publish all customizations</h2>
+<div class="note stop">
+<b class="lbl">🚨 Do not skip this, and do it before importing any data</b>
+<p>An <b>unmanaged</b> solution imports in a <b>draft</b> state. Until you publish, the tables exist
+but are not fully active — and the data import in the next section will either not see them or will
+map their columns wrongly. This is the single most common reason a pack "imports fine" and then does
+nothing.</p>
+<p>Open the imported solution and select <b>Publish all customizations</b> on the command bar. Wait
+for it to finish before continuing.</p>
+</div>
+
+<h2><span class="ph">6</span> Load the data</h2>
+<p class="sub">432 rows across six tables. <b>Order does not matter</b> — none of these tables uses a
+lookup column, deliberately, so there are no parent rows to load first.</p>
+
+<h3>6a. The normal route: one table at a time</h3>
+<ol>
+<li><b>Tables</b> in the left navigation, then open the table — start with <b>Policy</b>.</li>
+<li><b>Import → Import data from Excel</b>, then <b>Upload</b> and choose the matching CSV. The file
+names match the table names exactly, so <code>Policy.csv</code> goes on the <b>Policy</b>
+table.</li>
+<li>Wait for <b>Mapping status</b> to read <i>Mapping was successful</i>. If anything is flagged,
+open <b>Map status</b> and resolve it before continuing.</li>
+<li>Select <b>Import</b>. When it finishes, check the number of rows created against the count in
+the table below.</li>
+<li>Repeat for the other five.</li>
+</ol>
+
+<h3>6b. The fallback route: all six at once</h3>
+<p>Use this if step 6a's command is missing (Developer Plan, or a government cloud), or if you would
+rather do it in one pass. Power Platform admin center → <b>Environments</b> → your environment →
+<b>Settings → Data management → Data import wizard</b>, and upload
+<code>All-six-tables.zip</code>. The wizard maps each file to its table, and each column to its column,
+automatically: the file names match the table display names and the headers match the column display
+names exactly. Check the mapping screen before you commit anyway — it takes ten seconds and it is the
+only place a mismatch shows up before the rows land.</p>
+
+<div class="tblwrap"><table>
+<thead><tr><th>File</th><th>Table</th><th>Rows to expect</th></tr></thead>
+<tbody>
+<tr><td><code>Policy.csv</code></td><td>Policy</td><td>3</td></tr>
+<tr><td><code>Claim.csv</code></td><td>Claim</td><td>3</td></tr>
+<tr><td><code>Approved Repairer.csv</code></td><td>Approved Repairer</td><td>3</td></tr>
+<tr><td><code>Claims Guidance.csv</code></td><td>Claims Guidance</td><td>3</td></tr>
+<tr><td><code>Claimant.csv</code></td><td>Claimant</td><td>186</td></tr>
+<tr><td><code>Book Claim.csv</code></td><td>Book Claim</td><td>234</td></tr>
+</tbody></table></div>
+
+<div class="note stop">
+<b class="lbl">🚨 If an import goes wrong, do not simply run it again</b>
+<p>These tables carry no alternate key, so the importer has nothing to match an existing row on. It
+therefore <b>adds every row in the file as a new record</b>, every time. A second run leaves you with
+6 policies and 372 claimants, and the agent then retrieves contradictory data.</p>
+<p>The recovery is to delete the rows first and re-import: open the table's <b>Data</b> tab and
+delete them, or use Power Platform admin center → Settings → Data management → <b>Bulk deletion</b>
+for the larger two.</p>
+</div>
+
+<div class="note skip">
+<b class="lbl">⬜ Two of the six flows, and four of the ten tables, are only for the optional parts</b>
+<p><b>You want four flows.</b> <i>Claim Lookup</i> and <i>Policy Lookup</i> are the verified pair
+behind Chapter 2's lookup tools; <i>Repairer Lookup</i> and <i>Guidance Lookup</i> serve public information
+and check nobody. <i>Customer Claim Lookup</i> belongs to Chapter 3's optional customer sign-in, and
+<b><i>Entitlement Lookup</i> is superseded</b> — the verified Claim and Policy pair replaced it, and nothing in the book calls it. Do not build anything on it, and delete it if you like.</p>
+<p><b>Four tables ship empty by design</b> and there is nothing missing: <i>Submission</i> fills up
+when the claim form in the <code>Website</code> folder assesses a claim (Chapter 4), <i>Fraud Referral</i> and
+<i>Referral Claim</i> when Chapter 5's Fraud Desk writes a referral, and <i>Entitlement</i> is the table
+you seed yourself with your own customer's object id — Chapter 1, <i>Creating the external customer
+directory</i>, says how.</p>
+</div>
+
+<h2><span class="ph">7</span> Turn on the flows and assign the role</h2>
+<div class="tblwrap"><table>
+<tbody>
+<tr><td class="n">1</td><td class="t">Check the connection reference is bound</td><td>Open the
+solution → <b>Connection references</b>. Expect exactly one row, showing a connection rather than a
+blank. If it is blank, set it and <b>Save</b>.</td></tr>
+<tr><td class="n">2</td><td class="t">Turn on any flow showing Off</td><td>Solution → <b>Cloud
+flows</b>. Expect six. Select any that read <i>Off</i> and choose <b>Turn on</b>. They can only turn
+on once step 1 is right.</td></tr>
+<tr><td class="n">3</td><td class="t">Publish each flow</td><td>A flow must be <b>published</b>
+before an agent can use it as a tool.
+<span class="trap"><b>This is why a flow is missing from the tool picker</b> in Copilot Studio. The
+picker lists only flows that are published, use the <i>When an agent calls the flow</i> trigger, and
+end in a <i>Respond to the agent</i> action. All six satisfy the last two.</span></td></tr>
+<tr><td class="n">4</td><td class="t">Assign the security role</td><td>Power Platform admin center →
+your environment → <b>Settings → Users + permissions → Users</b> → select yourself → <b>Manage
+security roles</b> → tick <b>Claims 365 Attendee</b> → Save. The role arrives with the solution but
+grants nobody anything until it is assigned.
+<span class="trap">Sign out and back in afterwards. A role only takes effect in a new token.</span></td></tr>
+</tbody></table></div>
+
+<div class="note skip">
+<b class="lbl">⬜ You may not need the role at all</b>
+<p>If you are working alone as System Administrator in your own environment, you already have
+organisation-wide read on everything and the role changes nothing for you. Assign it anyway if you
+want to test what a non-admin sees — which is worth doing, because that is the configuration a
+real, non-admin user runs with.</p>
+</div>
+
+<h2><span class="ph">8</span> Check it worked</h2>
+<div class="tblwrap"><table>
+<thead><tr><th>Check</th><th>Expected</th></tr></thead>
+<tbody>
+<tr><td>Solution → Tables</td><td><b>10</b> tables, all prefixed <code>cp_</code></td></tr>
+<tr><td>Solution → Cloud flows</td><td><b>6</b> flows, all <b>On</b></td></tr>
+<tr><td>Solution → Connection references</td><td><b>1</b>, with a connection bound</td></tr>
+<tr><td>Row counts on the six seeded tables</td><td>3 / 3 / 3 / 3 / 186 / 234</td></tr>
+<tr><td>Open claim <code>CLM-2026-0387</code></td><td>Its <i>Next action</i> field must contain the
+words <b>Settlement of 2,700 GBP (3,200 less your 500 excess)</b> while <i>Amount claimed</i> reads
+<b>3,200</b>. That mismatch is Chapter 2's central lesson — if it is not there, the import did not
+land</td></tr>
+<tr><td>Open repairer <b>Brookvale Motors</b></td><td>Status <b>Suspended</b></td></tr>
+<tr><td>Optional second opinion</td><td>Solutions → the <b>…</b> menu → <b>Solution checker →
+Run</b>. Microsoft's own static analysis, in the portal, no download</td></tr>
+</tbody></table></div>
+
+<h2><span class="ph">9</span> Removing it again</h2>
+<div class="note stop">
+<b class="lbl">🚨 Deleting the solution does not uninstall anything</b>
+<p>In Microsoft's own words: deleting an unmanaged solution <i>"deletes the solution container but
+doesn't delete any of the unmanaged components within. Any data associated also remains."</i> You
+will see a confirmation, believe your tenant is clean, and every table, flow, role and row will still
+be there — now orphaned into the default solution.</p>
+<p><b>The clean teardown is to delete the environment you imported into</b> (Chapter 1 created it). That removes
+everything at once. Note the default environment cannot be deleted, and a deleted environment's URL
+cannot be reused for about 24 hours.</p>
+<p>If you must keep the environment, delete manually and in this order: the six cloud flows, then the
+connection reference, then each table (which destroys its rows irrecoverably), then the security
+role, then the solution container.</p>
+</div>
+
+<h2><span class="ph">10</span> When something goes wrong</h2>
+<div class="tblwrap"><table>
+<thead><tr><th>What you see</th><th>What it means</th></tr></thead>
+<tbody>
+<tr><td><i>This environment doesn't allow unmanaged customizations</i></td><td><b>Block unmanaged
+customizations</b> is on. Import into an environment you create yourself. This setting also stops
+Copilot Studio publishing an agent, so it blocks the exercises regardless.</td></tr>
+<tr><td><i>Principal user … is missing &lt;Component type&gt; privilege</i></td><td>The importing
+account is unlicensed, so Dataverse put it in Administrative access mode. Assign a licence and set
+Read-Write.</td></tr>
+<tr><td><i>Connection reference … was not given by invoker</i></td><td>The connection reference is
+unbound. Solution → Connection references → set it → Save.</td></tr>
+<tr><td>Flows will not turn on</td><td>Same cause as above, or the connection belongs to a different
+user than the one turning them on.</td></tr>
+<tr><td>A flow is missing from Copilot Studio's tool picker</td><td>It is not published. That is
+almost always the reason.</td></tr>
+<tr><td>The agent replies <i>Error code: 3000</i></td><td>That flow has <b>Asynchronous response</b>
+switched on. Open its <i>Respond to the agent</i> action → Settings → turn it off.</td></tr>
+<tr><td>Tables imported but the data import cannot see them</td><td>You did not <b>Publish all
+customizations</b> (section 5).</td></tr>
+<tr><td>Row counts are doubled</td><td>A data import was run twice. Delete the rows and import
+once.</td></tr>
+<tr><td>Import fails citing a policy, or one flow alone will not turn on</td><td>A Power Platform
+<b>data loss prevention</b> policy in your tenant classifies the HTTP connector as blocked. Only
+<i>Claims 365 Customer Claim Lookup</i> uses HTTP. Either ask your admin to allow it for this
+environment, or delete that one flow — the other five talk only to Dataverse, and nothing outside
+Chapter 3's customer sign-in depends on it.</td></tr>
+<tr><td>Solution is blocked from importing due to critical violations</td><td>Solution checker
+enforcement is set to Block in a Managed Environment. Your admin controls this; no critical
+violations are expected from this pack.</td></tr>
+</tbody></table></div>
+
+<div class="note skip">
+<b class="lbl">⬜ About the postcodes, before anyone asks</b>
+<p>The 186 claimant postcodes use <b>real UK outward codes</b> — M14, M20, SE15, EH8, LS7 and a few
+others — because the fraud scenario depends on a cluster of claimants living plausibly near one
+another, and invented outward codes would look obviously synthetic. The inward halves are generated
+and most are not deliverable addresses.</p>
+<p>This is not personal data: a postcode identifies an area of roughly fifteen households, not a
+person, and every name, email, phone number and bank detail attached to them is invented. If your
+reviewer would rather the outward codes were randomised, they carry no teaching weight — only the
+<i>clustering</i> matters: five claimants share the postcode M20 4WX, and six claims in <code>Book Claim.csv</code> record it as the incident location. Replace them freely, as long as those rows still match each other.</p>
+</div>
+
+<p class="foot"><b>Claims 365</b> and <b>Contoso Insurance</b> are training fiction. Every
+policyholder, claim, claimant, bank account, phone number and email address in this pack is invented:
+the phone numbers use Ofcom's reserved drama range, the sort codes use an unissued range, and the
+email domains use the reserved <code>.example</code> top-level domain, which cannot receive mail.
+Nothing here is anyone's real data.
+<br><br>The pack was exported from the live course environment on <b>24 August 2026</b> and checked
+for identifiers before shipping: it carries no tenant name, no organisation URL, no user account and
+no credential. The import routes above were verified against Microsoft Learn on the same day.
+<br><br>Full context for what you are building and why, including the parts of the setup this pack
+cannot ship, is in <b>Chapter 1</b> of the book.</p>
+</div></body></html>

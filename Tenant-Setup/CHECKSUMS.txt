@@ -1,0 +1,24 @@
+CLAIMS 365 SETUP PACK - SHA-256 CHECKSUMS
+========================================================================
+Verify on Windows with:  Get-FileHash <file>
+On macOS/Linux:  shasum -a 256 <file>
+
+If any hash here does not match, stop and download the pack again - do not import.
+
+f7e4524a2459dae5898df75e0a23a8abc310b46e95497ae0b4fa23fa95f7e132  All-six-tables.zip
+70d355dee6f46c66ba106f0afb9a828ad00fd37cdc39cf363052d44baf71bade  Claims365SetupPack_1_0_0_0.zip
+500b57ce3808f878a29b289ee4ab4954f387812f918ab855c81e4a15f44a156a  data/Approved Repairer.csv
+b35cb0b0ccc2c17bc49b7ff6d565e425685074c64c4aa03e14598119ebc11d6a  data/Book Claim.csv
+c4c04fa53dc5cea813ac917b60f8cc72e58638348bce26c2ff1e7dbea06b17ee  data/Claim.csv
+ea1558c413c67ab8499fe48cd5039901c8aa586fb3cc744462feac4ef634ee7a  data/Claimant.csv
+904ff7125044c71d5ebcd81e8e4d6ea26183dc2455603a70a38a5ce83784c396  data/Claims Guidance.csv
+9991140a4b99d49917e656e473fce28a4b0dab7ea224109ca5278a5c05f38fb9  data/Policy.csv
+2b955fdf8e8ea40681c0a4520b436d4ffa46ab87eab1d538f6c4946b3985378c  MANIFEST.json
+f0ccf1b8c362cbbcff849f4728de9b8e69f9fad8afbc7ec33e18cd63003f0ba0  module1/frontline-instructions.txt
+9464c17e9a15af61fafcc8e169eb6cee0c87cedb0afa58cb3f0cd98567d47376  module1/M1-Part7-evaluate-testset.csv
+df617cfe06432e196e9fcae0e2dec07ea18c1f519e94c28e10d7d0e8a96fcf94  module2/claim_assessment.schema.json
+a05bf03177ab84787d7669009b7063a41a8f5d3b18be5bc48e6cb974788a9543  module2/triage-agent-instructions.txt
+c683b8f6e08005e89fa9196193be4554b6f6f5437dfe26d6bcdcc8d5f34a254d  README.txt
+f5a373243036d581b30162f074dbb1f6202867eff7cfca36d46ffb6b7fee8d03  Setup-Pack-Guide.html
+
+15 files.
