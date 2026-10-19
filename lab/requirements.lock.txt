@@ -122,7 +122,7 @@ jsonpath-ng==1.8.0
 jsonschema==4.26.0
 jsonschema-specifications==2025.9.1
 MarkupSafe==3.0.3
-mcp==1.29.0
+mcp==1.30.0
 mem0ai==2.0.15
 microsoft-agents-activity==0.3.1
 microsoft-agents-copilotstudio-client==0.3.1
