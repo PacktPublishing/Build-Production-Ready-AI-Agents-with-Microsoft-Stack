@@ -140,7 +140,7 @@ ollama==0.5.3
 openai==2.51.0
 openai-agents==0.19.2
 openai-chatkit==1.6.5
-opentelemetry-api==1.43.0
+opentelemetry-api==1.45.1
 opentelemetry-exporter-otlp-proto-common==1.43.0
 opentelemetry-exporter-otlp-proto-http==1.43.0
 opentelemetry-instrumentation==0.64b0
