@@ -166,7 +166,7 @@ opentelemetry-util-genai==0.3b0
 opentelemetry-util-http==0.64b0
 orderedmultidict==1.0.2
 packaging==26.2
-pillow==11.3.0
+pillow==13.0.0
 portalocker==3.2.0
 posthog==7.35.5
 powerfx==0.0.34
